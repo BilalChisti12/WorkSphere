@@ -1,0 +1,85 @@
+POST http://localhost:9080/register HTTP/1.1
+Content-Type: application/json
+
+{
+    "name": "Test User",
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "password123"
+}
+
+
+###
+
+POST http://localhost:9080/login HTTP/1.1
+Content-Type: application/json
+
+{
+    "email": "test1@example.com",
+    "password": "password1234"
+}
+
+
+###
+
+GET http://localhost:9080/get_user_profile?token=55290b986ae33f0f5eccc8966a3fd11b3c89effa05bcae974ad9e03854705d40 HTTP/1.1
+
+
+
+###
+
+POST http://localhost:9080/update_profile_data HTTP/1.1
+Content-Type: application/json
+
+{
+    "token": "55290b986ae33f0f5eccc8966a3fd11b3c89effa05bcae974ad9e03854705d40",
+    "bio": "Test Bio",
+    "currentPost": "Test Current Post",
+    "pastWork": [
+        {
+            "company": "Test Company",
+            "position": "Test Position",
+            "years": "Test Years"
+        }
+    ],
+    "education": [
+        {
+            "school": "Test School",
+            "degree": "Test Degree",
+            "fieldOfStudy": "Test Field Of Study"
+        }
+    ],
+    "skills": [
+        {
+            "skill": "Test Skill",
+            "priority": 1
+        }
+    ]
+}
+
+###
+
+POST http://localhost:9080/user_update HTTP/1.1
+Content-Type: application/json
+
+{
+    "token": "1c9f01568d0855bece58560042d00964ee6d5537fb3f88f67e6f5f069bdc3e61",
+    "email": "test1@example.com",
+    "password" : "password1234"
+} 
+
+###
+
+GET http://localhost:9080/user/search
+
+
+###
+
+POST http://localhost:9080/upload_post HTTP/1.1
+Content-Type: application/json;
+
+{
+    "token": "99db8edc24f4c13ef3f4826c117725c1ccc26210dd85d681ad6c88917e440fc0",
+    "body": "Test Post",
+    "media": "test.jpg"
+}
