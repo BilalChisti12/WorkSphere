@@ -83,3 +83,22 @@ Content-Type: application/json;
     "body": "Test Post",
     "media": "test.jpg"
 }
+
+###
+
+GET http://localhost:9080/user/posts?token=3ae33370ed019e0f3212ade46dc4b6c726bf473b9368df9e39eeab64cd6d3af2
+
+###
+
+POST http://localhost:9080/post/comment HTTP/1.1
+Content-Type: application/json
+
+{
+    "token": "3ae33370ed019e0f3212ade46dc4b6c726bf473b9368df9e39eeab64cd6d3af2",
+    "post_id": "6ab2c580373f946f10cfa53d",
+    "comment": "Hello World"
+}
+
+###
+
+GET http://localhost:9080/post/all_comments?post_id=6ab2c580373f946f10cfa53d

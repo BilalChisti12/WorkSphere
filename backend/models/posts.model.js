@@ -2,38 +2,38 @@ import mongoose from "mongoose";
 
 
 const postSchema = mongoose.Schema({
-    userId:{
+    userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: true
     },
-    body:{
-        type:String,
-        required:true
+    body: {
+        type: String,
+        required: true
     },
-    likes:{
-        type:Number,
-        default:0
+    likes: {
+        type: Number,
+        default: 0
     },
-    createdAt:{
-        type:Date,
-        default:Date.now
+    createdAt: {
+        type: Date,
+        default: Date.now
     },
-    updatedAt:{
-        type:Date,
-        default:Date.now
+    updatedAt: {
+        type: Date,
+        default: Date.now
     },
-    media:{
-        type:String,
-        default:""
+    media: {
+        type: String,
+        default: ""
     },
-    active:{
-        type:Boolean,
-        default:true
+    active: {
+        type: Boolean,
+        default: true
     },
-    fileType:{
-        type:String,
-        default:''
+    fileType: {
+        type: String,
+        default: ''
     },
 
 });
