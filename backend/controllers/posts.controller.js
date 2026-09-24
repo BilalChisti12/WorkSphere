@@ -54,8 +54,8 @@ export const deletePost = async (req, res) => {
         if (!post) return res.status(400).json({ message: "Post not found" });
         if (post.userId.toString() !== user._id.toString()) return res.status(400).json({ message: "You are not authorized to delete this post" });
         await post.deleteOne({ _id: postId });
+        await Comment.deleteMany({postId: postId});
         return res.status(200).json({ message: "Post deleted successfully" });
-
     } catch (e) {
         return res.status(500).json({ message: e.message });
     }
@@ -112,3 +112,19 @@ export const deleteComment = async (req, res) => {
     }
 }
 
+
+export const likePost = async (req, res) => {
+    const {token, postId} = req.body;
+    try{
+        const user = await User.findOne({token});
+        if(!user) return res.status(400).json({message: "User not found"});
+        const post = await Post.findOne({_id: postId});
+        if(!post) return res.status(400).json({message: "Post not found"});
+        if(post.likes.includes(user._id)) return res.status(400).json({message: "You have already liked this post"});
+        post.likes.push(user._id);
+        await post.save();
+        return res.status(200).json({message: "Post liked successfully"});
+    }catch(e){
+        return res.status(500).json({message: e.message})
+    }
+}

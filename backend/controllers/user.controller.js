@@ -103,9 +103,8 @@ export const updateProfilePic = async (req, res) => {
 
         const user = await User.findOne({ token }) || {};
         if (!user) return res.status(400).json({ message: "user not found" });
-
+        if (!req.file) return res.status(400).json({ message: "No file uploaded" });
         user.profilePicture = req.file.filename;
-
         await user.save();
 
         return res.status(200).json({ message: "Profile picture updated successfully" });
@@ -211,7 +210,7 @@ export const sendConnectionRequest = async (req, res) =>{
 
         const connectionUser = await User.findOne({_id: connectionId});
         if(!connectionUser) return res.status(404).json({mesage:"Target User not found"});
-
+        if(user._id === connectionId) return res.status(400).json({message:"You can't send connection request to yourself"});
         const existingReq = await ConnectionRequest.findOne({userId: user._id , connectionId: connectionUser._id});
 
         if(existingReq) return res.status(400).json({message:"Connection request already sent"});

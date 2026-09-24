@@ -4,3 +4,5 @@ node_modules/
 .next/
 dist/
 build/
+
+backend_audit_remediation_guide.md
