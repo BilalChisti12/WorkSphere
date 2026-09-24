@@ -6,6 +6,9 @@ import crypto from 'crypto';
 import Profile from '../models/profile.model.js';
 import Post from '../models/posts.model.js';
 import Comment from '../models/comments.model.js';
+import { postQueue } from '../queue/postQueue.js';
+
+
 export const activeCheck = async (req, res) => {
     return res.status(200).json({
         message: "Server is active",
@@ -34,6 +37,46 @@ export const createPost = async (req, res) => {
         return res.status(500).json({ message: error.message });
     }
 }
+
+
+export const schedulePost = async (req, res) => {
+    const { token, body, scheduledTime } = req.body;
+    
+    try {
+        const user = await User.findOne({ token });
+        if (!user) return res.status(400).json({ message: "User not found" });
+        const delay = new Date(scheduledTime).getTime() - Date.now();
+        
+        if (delay < 0) {
+            return res.status(400).json({ message: "Scheduled time must be in the future" });
+        }
+
+        const mediaFile = req.file || '';
+        const post = new Post({
+            userId: user._id,
+            body: body || '',
+            media: mediaFile ? mediaFile.filename : '',
+            fileType: mediaFile ? mediaFile.mimetype.split('/')[1] : '',
+            active: false,
+        });
+        await post.save();
+
+        await postQueue.add(
+            'publish_post',
+            { postId: post._id },
+            { 
+                delay: delay,
+                jobId: post._id.toString() //idm
+            }
+        );
+
+        return res.status(200).json({ message: "Post scheduled successfully!" });
+
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+}
+
 
 export const getAllPosts = async (req, res) => {
     const { token } = req.query;

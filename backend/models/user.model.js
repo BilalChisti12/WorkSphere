@@ -35,7 +35,16 @@ const userSchema = mongoose.Schema({
     token : {
         type : String,
         default : ''
+    },
+    slackToken: {
+        type: String,
+        default: null
+    },
+    slackUserId: {
+        type: String,
+        default: null
     }
+
 });
 
 

@@ -112,6 +112,43 @@ export const login = async (req, res) => {
     }
 }
 
+export const connectSlack = async (req, res) => {
+    const { token } = req.query; 
+    const slackURL = `https://slack.com/oauth/v2/authorize?client_id=${process.env.SLACK_CLIENT_ID}&user_scope=chat:write&state=${token}`;
+    res.redirect(slackURL);
+}
+
+export const slackCallback = async (req, res) => {
+    const { code, state } = req.query; 
+    try {
+        const response = await fetch('https://slack.com/api/oauth.v2.access', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                client_id: process.env.SLACK_CLIENT_ID,
+                client_secret: process.env.SLACK_CLIENT_SECRET,
+                code: code
+            })
+        });
+        const data = await response.json();
+        if (data.ok) {
+            await User.updateOne(
+                { token: state }, 
+                { 
+                    slackToken: data.authed_user.access_token,
+                    slackUserId: data.authed_user.id 
+                }
+            );
+            return res.send("Slack connected successfully! You can close this window.");
+        } else {
+            return res.status(400).send("Failed to connect Slack.");
+        }
+    } catch (error) {
+        return res.status(500).send("Error connecting to Slack.");
+    }
+}
+
+
 export const updateProfilePic = async (req, res) => {
     const { token } = req.body;
     try {

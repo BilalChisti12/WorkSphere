@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  # 1. Our Redis Server (For BullMQ & Rate Limiting)
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+      
+  # 2. Our Elasticsearch Server (For lightning-fast post searches)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false # Disables passwords for easy local development
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m # Prevents ES from eating all your computer's RAM
+    ports:
+      - "9200:9200"

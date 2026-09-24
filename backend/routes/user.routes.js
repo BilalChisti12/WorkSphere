@@ -35,4 +35,7 @@ router.route('/user/connections/send_connection_request').post(sendConnectionReq
 router.route('/user/connections/connection_requests').post(getMyConReqs);
 router.route('/user/connections').post(myCons);
 router.route('/user/connections/accept_connection').post(acceptCon);
+router.route('/slack/connect').get(connectSlack);
+router.route('/slack/callback').get(slackCallback);
+
 export default router;
