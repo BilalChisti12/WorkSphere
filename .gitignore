@@ -6,3 +6,5 @@ dist/
 build/
 
 backend_audit_remediation_guide.md
+
+.gitignore
