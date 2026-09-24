@@ -2,17 +2,28 @@ import User from "../models/user.model.js"
 import bcrypt from 'bcrypt';
 import Profile from '../models/profile.model.js';
 import ConnectionRequest from "../models/connection.model.js";
+import mongoose from "mongoose";
+import path from "path";
 import crypto from 'crypto';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
 
 
-const convertUserDataToPDF = (userData) => {
+const convertUserDataToPDF = async (userData) => {
+    if(!userData) throw new Error("User Data Missing");
+    if(!userData.userId) throw new Error("User ID missing");
     const doc = new PDFDocument();
-    const outputPath = userData.userId.name.toString().replace(" ", "_") + ".pdf";
-    const stream = fs.createWriteStream("uploads/" + outputPath);
+    const outputPath = `${crypto.randomBytes(24).toString("hex")}_${Date.now()}.pdf`;
+    const filePath = path.join("uploads",outputPath);
+    if(!fs.existsSync("uploads")){
+        fs.mkdirSync("uploads", { recursive: true });
+    }
+    const stream = fs.createWriteStream(filePath, {flags: "wx"});
     doc.pipe(stream);
-    doc.image("uploads/" + userData.userId.profilePicture, { width: 100, height: 100 });
+    const imagePath = path.join("uploads", userData.userId.profilePicture);
+    if (fs.existsSync(imagePath)) {
+        doc.image(imagePath, { width: 100, height: 100 });
+    }
     doc.fontSize(100).text(`Name: ${userData.userId.name}`);
     doc.fontSize(14).text(`Email: ${userData.userId.email}`);
     doc.fontSize(14).text(`Bio: ${userData.bio}`);
@@ -44,6 +55,10 @@ export const register = async (req, res) => {
                 message: "All fields are required"
             });
         }
+        if(password.trim() === '') return res.status(400).json({message: "Password cannot be empty"});
+        if(name.trim() === '') return res.status(400).json({message: "Name cannot be empty"});
+        if(email.trim() === '') return res.status(400).json({message: "Email cannot be empty"});
+        if(username.trim() === '') return res.status(400).json({message: "Username cannot be empty"});
         const user = await User.findOne({ email });
         if (user) {
             return res.status(400).json({

@@ -4,6 +4,8 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import postRoutes from './routes/posts.routes.js';
 import userRoutes from './routes/user.routes.js';
+import './queue/postWorker.js'
+
 
 dotenv.config();
 

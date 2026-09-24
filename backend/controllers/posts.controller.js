@@ -1,5 +1,8 @@
 import User from "../models/user.model.js"
 import bcrypt from 'bcrypt';
+import mongoose from "mongoose";
+import path from 'path';
+import crypto from 'crypto';
 import Profile from '../models/profile.model.js';
 import Post from '../models/posts.model.js';
 import Comment from '../models/comments.model.js';
@@ -50,6 +53,7 @@ export const deletePost = async (req, res) => {
     try {
         const user = await User.findOne({ token });
         if (!user) return res.status(400).json({ message: "User not found" });
+        if(!mongoose.Types.ObjectId.isValid(postId)) return res.status(400).json({message: "Invalid Post ID"});
         const post = await Post.findOne({ _id: postId });
         if (!post) return res.status(400).json({ message: "Post not found" });
         if (post.userId.toString() !== user._id.toString()) return res.status(400).json({ message: "You are not authorized to delete this post" });
@@ -64,6 +68,7 @@ export const deletePost = async (req, res) => {
 export const commentPost = async (req, res) => {
     try {
         const { token, post_id, comment } = req.body;
+        if(!token || !post_id || !comment || comment.trim() === '') return res.status(400).json({message: "All fields are required"});
         const user = await User.findOne({ token });
         if (!user) return res.status(400).json({ message: "User not found" });
         const post = await Post.findOne({ _id: post_id });
@@ -120,7 +125,7 @@ export const likePost = async (req, res) => {
         if(!user) return res.status(400).json({message: "User not found"});
         const post = await Post.findOne({_id: postId});
         if(!post) return res.status(400).json({message: "Post not found"});
-        if(post.likes.includes(user._id)) return res.status(400).json({message: "You have already liked this post"});
+        if(post.likes.toString().includes(user._id.toString())) return res.status(400).json({message: "You have already liked this post"});
         post.likes.push(user._id);
         await post.save();
         return res.status(200).json({message: "Post liked successfully"});
