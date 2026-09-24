@@ -7,6 +7,7 @@ import Profile from '../models/profile.model.js';
 import Post from '../models/posts.model.js';
 import Comment from '../models/comments.model.js';
 import { postQueue } from '../queue/postQueue.js';
+import { elasticClient } from '../elasticClient.js';
 
 
 export const activeCheck = async (req, res) => {
@@ -174,5 +175,31 @@ export const likePost = async (req, res) => {
         return res.status(200).json({message: "Post liked successfully"});
     }catch(e){
         return res.status(500).json({message: e.message})
+    }
+}
+
+
+export const searchPosts = async (req, res) => {
+    // We expect the frontend to call: /search_posts?query=javascript
+    const { query } = req.query; 
+    
+    if (!query) return res.status(400).json({ message: "Please provide a search query" });
+
+    try {
+        const result = await elasticClient.search({
+            index: 'posts',
+            query: {
+                match: {
+                    body: query
+                }
+            }
+        });
+        const cleanResults = result.hits.hits.map(hit => ({
+            _id: hit._id,
+            ...hit._source // This contains the body, userid, and pubat
+        }));
+        return res.status(200).json(cleanResults);
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
     }
 }

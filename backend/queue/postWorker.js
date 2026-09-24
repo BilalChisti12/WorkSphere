@@ -2,6 +2,7 @@ import { Worker, DelayedError } from 'bullmq';
 import { redisConnection } from './postQueue.js';
 import Post from '../models/posts.model.js';
 import User from '../models/user.model.js';
+import { elasticClient } from '../elasticClient.js';
 
 const worker = new Worker('PostQueue', async (job) => {
     console.log(`Processing scheduled post. Job ID: ${job.id}`);
@@ -45,6 +46,21 @@ const worker = new Worker('PostQueue', async (job) => {
         post.active = true;
         await post.save();
         console.log(`Successfully published post: ${post._id}`);
+        try {
+            await elasticClient.index({
+                index: 'posts',
+                id: post._id.toString(),
+                document: {
+                    body: post.body,
+                    userId: post.userId.toString(),
+                    publishedAt: new Date()
+                }
+            });
+            console.log(`Added to Elasticsearch index: ${post._id}`);
+        } catch (esErr) {
+            console.error("Elasticsearch Error:", esErr.message);
+        }
+
         await redisConnection.incr(redisKey);
         await redisConnection.expire(redisKey, 3600);
 
