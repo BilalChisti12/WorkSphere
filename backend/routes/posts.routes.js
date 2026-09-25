@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { activeCheck, createPost, schedulePost, searchPosts, getAllPosts, deletePost, commentPost, getComments, deleteComment, likePost } from "../controllers/posts.controller.js";
+import { authenticate } from '../middleware/auth.middleware.js';
 import multer from "multer";
 const router = Router();
 
@@ -17,14 +18,14 @@ const upload = multer({
 });
 
 router.route('/').get(activeCheck);
-router.route('/upload_post').post(upload.single('media'),createPost);
-router.route('/schedule_post').post(upload.single('media'),schedulePost);
-router.route('/user/posts').get(getAllPosts);
-router.route('/delete_post').post(deletePost);
-router.route('/post/comment').post(commentPost);
-router.route('/post/all_comments').get(getComments);
-router.route('/post/delete_comment').post(deleteComment);
-router.route('post/like').post(likePost);
+router.route('/upload_post').post(authenticate, upload.single('media'),createPost);
+router.route('/schedule_post').post(authenticate, upload.single('media'), schedulePost);
+router.route('/user/posts').get(authenticate,getAllPosts);
+router.route('/delete_post').post(authenticate,deletePost);
+router.route('/post/comment').post(authenticate,commentPost);
+router.route('/post/all_comments').get(authenticate,getComments);
+router.route('/post/delete_comment').post(authenticate,deleteComment);
+router.route('/post/like').post(authenticate,likePost);
 router.route('/search_posts').get(searchPosts);
 
 export default router;

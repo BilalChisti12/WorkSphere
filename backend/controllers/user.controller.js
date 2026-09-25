@@ -8,7 +8,6 @@ import crypto from 'crypto';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
 
-
 const convertUserDataToPDF = async (userData) => {
     if(!userData) throw new Error("User Data Missing");
     if(!userData.userId) throw new Error("User ID missing");
@@ -150,11 +149,8 @@ export const slackCallback = async (req, res) => {
 
 
 export const updateProfilePic = async (req, res) => {
-    const { token } = req.body;
     try {
-
-        const user = await User.findOne({ token }) || {};
-        if (!user) return res.status(400).json({ message: "user not found" });
+        const user = req.user;
         if (!req.file) return res.status(400).json({ message: "No file uploaded" });
         user.profilePicture = req.file.filename;
         await user.save();
@@ -167,10 +163,9 @@ export const updateProfilePic = async (req, res) => {
 }
 
 export const updateUserProfile = async (req, res) => {
-    const { token, ...newUserData } = req.body || {};
+    const {newUserData } = req.body || {};
     try {
-        const user = await User.findOne({ token });
-        if (!user) return res.status(400).json({ message: "user not found" });
+        const user = req.user;
 
         const { username, email } = newUserData;
 
@@ -193,16 +188,7 @@ export const updateUserProfile = async (req, res) => {
 
 export const getUserProfile = async (req, res) => {
     try {
-        const { token } = req.query || {};
-        if (!token) {
-            return res.status(400).json({ message: "Token is required" });
-        }
-
-        const user = await User.findOne({ token });
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
+        const user = req.user
         const userProfile = await Profile.findOne({ userId: user._id }).populate("userId", "name email username profilePicture");
         return res.json(userProfile);
 
@@ -213,9 +199,8 @@ export const getUserProfile = async (req, res) => {
 
 export const updateProfileData = async (req, res) => {
     try {
-        const { token, ...newProfileData } = req.body;
-        const userProfile = await User.findOne({ token });
-        if (!userProfile) return res.status(404).json({ message: "User not found" });
+        const {newProfileData } = req.body;
+        const userProfile = req.user;
 
         const profile = await Profile.findOne({ userId: userProfile._id });
         if (!profile) return res.status(404).json({ message: "Profile not found" });
@@ -254,12 +239,10 @@ export const downloadProfile = async (req, res) => {
 
 
 export const sendConnectionRequest = async (req, res) =>{
-    const{token, connectionId} = req.body;
+    const{connectionId} = req.body;
 
     try{
-        const user = await User.findOne({token});
-        if(!user) return res.status(404).json({message:"User not found"});
-
+        const user = req.user;
         const connectionUser = await User.findOne({_id: connectionId});
         if(!connectionUser) return res.status(404).json({mesage:"Target User not found"});
         if(user._id === connectionId) return res.status(400).json({message:"You can't send connection request to yourself"});
@@ -282,10 +265,8 @@ export const sendConnectionRequest = async (req, res) =>{
 }
 
 export const getMyConReqs = async (req, res) => {
-    const {token} = req.body;
     try{
-        const user = await User.findOne({token});
-        if(!user) return res.status(404).json({message:"User not found"});
+        const user = req.user;
 
         const reqs = await ConnectionRequest.find({userId: user._id}).populate("connectionId","name email username profilePicture");
 
@@ -298,10 +279,8 @@ export const getMyConReqs = async (req, res) => {
 
 
 export const myCons = async (req, res) => {
-    const {token} = req.body;
     try{
-        const user = await User.findOne({token});
-        if(!user) return res.status(404).json({message:"User not found"});
+        const user = req.user;
         const conns = await ConnectionRequest.find({connectionId: user._id}).populate("userId", "name email username profilePicture");
 
         return res.json(conns);
@@ -315,20 +294,15 @@ export const myCons = async (req, res) => {
 
 
 export const acceptCon = async (req, res) => {
-    const {token, requestId, action} = req.body;
+    const {requestId, action} = req.body;
     try{
-
-        const user = await User.findOne({token});
-        if(!user) return res.status(404).json({message:"User not found"});
-
+        const user = req.user;
         const conn = await ConnectionRequest.findOne({_id: requestId});
         if(!conn) return res.status(404).json({message:"Connection request not found"});
-
         conn.status_accepted = action=='accept' ? true : false;
         await conn.save();
-
         return res.status(200).json({message:"Connection request accepted successfully"});
-
+        
     }catch(e){
         return res.status(500).json({message: e.message});
     }
