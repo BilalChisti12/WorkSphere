@@ -5,16 +5,13 @@ const postSchema = mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-        required: true
+        required: true,
+        index : true
     },
     body: {
         type: String,
         required: true
     },
-    likes: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User"
-    }],
     createdAt: {
         type: Date,
         default: Date.now

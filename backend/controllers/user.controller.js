@@ -7,18 +7,16 @@ import path from "path";
 import crypto from 'crypto';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
+import jwt from "jsonwebtoken";
 
-const convertUserDataToPDF = async (userData) => {
-    if(!userData) throw new Error("User Data Missing");
-    if(!userData.userId) throw new Error("User ID missing");
+
+const convertUserDataToPDF = async (userData, res) => {
+    if (!userData) throw new Error("User Data Missing");
+    if (!userData.userId) throw new Error("User ID missing");
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${userData.userId.name}_resume.pdf`);
     const doc = new PDFDocument();
-    const outputPath = `${crypto.randomBytes(24).toString("hex")}_${Date.now()}.pdf`;
-    const filePath = path.join("uploads",outputPath);
-    if(!fs.existsSync("uploads")){
-        fs.mkdirSync("uploads", { recursive: true });
-    }
-    const stream = fs.createWriteStream(filePath, {flags: "wx"});
-    doc.pipe(stream);
+    doc.pipe(res);
     const imagePath = path.join("uploads", userData.userId.profilePicture);
     if (fs.existsSync(imagePath)) {
         doc.image(imagePath, { width: 100, height: 100 });
@@ -40,7 +38,6 @@ const convertUserDataToPDF = async (userData) => {
         doc.fontSize(14).text(`${index + 1}. ${skill.skill}, ${skill.priority}`);
     })
     doc.end();
-    return outputPath;
 }
 
 
@@ -54,10 +51,10 @@ export const register = async (req, res) => {
                 message: "All fields are required"
             });
         }
-        if(password.trim() === '') return res.status(400).json({message: "Password cannot be empty"});
-        if(name.trim() === '') return res.status(400).json({message: "Name cannot be empty"});
-        if(email.trim() === '') return res.status(400).json({message: "Email cannot be empty"});
-        if(username.trim() === '') return res.status(400).json({message: "Username cannot be empty"});
+        if (password.trim() === '') return res.status(400).json({ message: "Password cannot be empty" });
+        if (name.trim() === '') return res.status(400).json({ message: "Name cannot be empty" });
+        if (email.trim() === '') return res.status(400).json({ message: "Email cannot be empty" });
+        if (username.trim() === '') return res.status(400).json({ message: "Username cannot be empty" });
         const user = await User.findOne({ email });
         if (user) {
             return res.status(400).json({
@@ -89,6 +86,7 @@ export const register = async (req, res) => {
 }
 
 
+
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body || {};
@@ -98,9 +96,10 @@ export const login = async (req, res) => {
         if (!user.active) return res.status(400).json({ message: "Account is deactivated" });
         const isPass = await bcrypt.compare(password, user.password);
         if (!isPass) return res.status(400).json({ message: "invalid credentials" });
-        const token = crypto.randomBytes(32).toString("hex");
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
         await User.updateOne({ _id: user._id }, { token });
-        return res.json({ token, message: "Login successfully" });
+
+        return res.json({ token, message: "Login successfull" });
     }
     catch (error) {
         console.log("Login error:", error);
@@ -111,14 +110,25 @@ export const login = async (req, res) => {
     }
 }
 
+export const logout = async (req, res) => {
+    try {
+        const user = req.user;
+        await User.updateOne({ _id: user._id }, { token: "" });
+        return res.status(200).json({ message: "Logged out successfully" });
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+}
+
+
 export const connectSlack = async (req, res) => {
-    const { token } = req.query; 
+    const { token } = req.query;
     const slackURL = `https://slack.com/oauth/v2/authorize?client_id=${process.env.SLACK_CLIENT_ID}&user_scope=chat:write&state=${token}`;
     res.redirect(slackURL);
 }
 
 export const slackCallback = async (req, res) => {
-    const { code, state } = req.query; 
+    const { code, state } = req.query;
     try {
         const response = await fetch('https://slack.com/api/oauth.v2.access', {
             method: 'POST',
@@ -132,10 +142,10 @@ export const slackCallback = async (req, res) => {
         const data = await response.json();
         if (data.ok) {
             await User.updateOne(
-                { token: state }, 
-                { 
+                { token: state },
+                {
                     slackToken: data.authed_user.access_token,
-                    slackUserId: data.authed_user.id 
+                    slackUserId: data.authed_user.id
                 }
             );
             return res.send("Slack connected successfully! You can close this window.");
@@ -144,6 +154,16 @@ export const slackCallback = async (req, res) => {
         }
     } catch (error) {
         return res.status(500).send("Error connecting to Slack.");
+    }
+}
+
+export const disconSlack = async (req, res) => {
+    try {
+        const user = req.user;
+        await User.updateOne({ _id: user._id }, { slackToken: null, slackUserId: null });
+        return res.json({ message: "Slack disconnected successfully" });
+    } catch (e) {
+        return res.status(500).json({ message: e.message });
     }
 }
 
@@ -163,7 +183,7 @@ export const updateProfilePic = async (req, res) => {
 }
 
 export const updateUserProfile = async (req, res) => {
-    const {newUserData } = req.body || {};
+    const { newUserData } = req.body || {};
     try {
         const user = req.user;
 
@@ -199,7 +219,7 @@ export const getUserProfile = async (req, res) => {
 
 export const updateProfileData = async (req, res) => {
     try {
-        const {newProfileData } = req.body;
+        const { newProfileData } = req.body;
         const userProfile = req.user;
 
         const profile = await Profile.findOne({ userId: userProfile._id });
@@ -217,38 +237,60 @@ export const updateProfileData = async (req, res) => {
 
 export const getAllUserProfile = async (req, res) => {
     try {
-        const search = await Profile.find().populate("userId", 'name username email profilePicture');
-        return res.json({ search });
+        const searchQuery = req.query.query || '';
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        const matchingUsers = await User.find({
+            $or: [
+                { name: { $regex: searchQuery, $options: 'i' } },
+                { username: { $regex: searchQuery, $options: 'i' } }
+            ]
+        }).select('_id');
+        const userIds = matchingUsers.map(user => user._id);
+        const profiles = await Profile.find({ userId: { $in: userIds } }).populate("userId", "name username email profilePicture").skip(skip).limit(limit);
+        return res.json(profiles);
+    } catch (e) {
+        return res.status(500).json({ message: e.message });
+    }
+}
 
+export const getProfileById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const profile = await Profile.findOne({ userId: id }).populate("userId", "name username email profilePicture");
+        if (!profile) return res.status(404).json({ message: "Profile not found" });
+        return res.status(200).json(profile);
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
 }
 
 
+
 export const downloadProfile = async (req, res) => {
     const user_id = req.query.id;
     try {
         const userProfile = await Profile.findOne({ userId: user_id }).populate("userId", 'name username email profilePicture');
-        let a = await convertUserDataToPDF(userProfile);
-        return res.json({ "message": a });
+        await convertUserDataToPDF(userProfile, res);
     } catch (error) {
-        return res.json({ message: error.message });
+        return res.status(500).json({ message: error.message });
     }
 }
 
 
-export const sendConnectionRequest = async (req, res) =>{
-    const{connectionId} = req.body;
 
-    try{
+export const sendConnectionRequest = async (req, res) => {
+    const { connectionId } = req.body;
+
+    try {
         const user = req.user;
-        const connectionUser = await User.findOne({_id: connectionId});
-        if(!connectionUser) return res.status(404).json({mesage:"Target User not found"});
-        if(user._id === connectionId) return res.status(400).json({message:"You can't send connection request to yourself"});
-        const existingReq = await ConnectionRequest.findOne({userId: user._id , connectionId: connectionUser._id});
+        const connectionUser = await User.findOne({ _id: connectionId });
+        if (!connectionUser) return res.status(404).json({ mesage: "Target User not found" });
+        if (user._id === connectionId) return res.status(400).json({ message: "You can't send connection request to yourself" });
+        const existingReq = await ConnectionRequest.findOne({ userId: user._id, connectionId: connectionUser._id });
 
-        if(existingReq) return res.status(400).json({message:"Connection request already sent"});
+        if (existingReq) return res.status(400).json({ message: "Connection request already sent" });
 
         const request = new ConnectionRequest({
             userId: user._id,
@@ -257,53 +299,53 @@ export const sendConnectionRequest = async (req, res) =>{
 
         await request.save();
 
-        return res.status(200).json({message:"Connection request sent successfully"});
+        return res.status(200).json({ message: "Connection request sent successfully" });
 
-    }catch(error){
-        return res.status(500).json({message: error.message});
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
     }
 }
 
 export const getMyConReqs = async (req, res) => {
-    try{
+    try {
         const user = req.user;
 
-        const reqs = await ConnectionRequest.find({userId: user._id}).populate("connectionId","name email username profilePicture");
+        const reqs = await ConnectionRequest.find({ userId: user._id }).populate("connectionId", "name email username profilePicture");
 
-        return res.status(200).json({reqs});
-        
-    }catch(err){
-        return res.status(500).json({message:err.message});
+        return res.status(200).json({ reqs });
+
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
     }
 }
 
 
 export const myCons = async (req, res) => {
-    try{
+    try {
         const user = req.user;
-        const conns = await ConnectionRequest.find({connectionId: user._id}).populate("userId", "name email username profilePicture");
+        const conns = await ConnectionRequest.find({ connectionId: user._id }).populate("userId", "name email username profilePicture");
 
         return res.json(conns);
 
-        
-    }catch(e){
-        return res.status(500).json({message: e.message});
+
+    } catch (e) {
+        return res.status(500).json({ message: e.message });
     }
 
 }
 
 
 export const acceptCon = async (req, res) => {
-    const {requestId, action} = req.body;
-    try{
+    const { requestId, action } = req.body;
+    try {
         const user = req.user;
-        const conn = await ConnectionRequest.findOne({_id: requestId});
-        if(!conn) return res.status(404).json({message:"Connection request not found"});
-        conn.status_accepted = action=='accept' ? true : false;
+        const conn = await ConnectionRequest.findOne({ _id: requestId, connectionId: user._id });
+        if (!conn) return res.status(404).json({ message: "Connection request not found" });
+        conn.status_accepted = action == 'accept' ? true : false;
         await conn.save();
-        return res.status(200).json({message:"Connection request accepted successfully"});
-        
-    }catch(e){
-        return res.status(500).json({message: e.message});
+        return res.status(200).json({ message: "Connection request accepted successfully" });
+
+    } catch (e) {
+        return res.status(500).json({ message: e.message });
     }
 }

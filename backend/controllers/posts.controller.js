@@ -6,8 +6,11 @@ import crypto from 'crypto';
 import Profile from '../models/profile.model.js';
 import Post from '../models/posts.model.js';
 import Comment from '../models/comments.model.js';
+import Like from '../models/like.model.js';
+import ConnectionRequest from "../models/connection.model.js";
 import { postQueue } from '../queue/postQueue.js';
 import { elasticClient } from '../elasticClient.js';
+import { elasticQueue } from '../queue/elasticQueue.js';
 
 export const activeCheck = async (req, res) => {
     return res.status(200).json({
@@ -32,8 +35,8 @@ export const createPost = async (req, res) => {
             fileType: mediaFile ? mediaFile.mimetype.split('/')[1] : '',
         });
         await post.save();
+        await elasticQueue.add('index_post', { postId: post._id });
         return res.status(200).json({ message: "Post created successfully" });
-
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
@@ -74,9 +77,34 @@ export const schedulePost = async (req, res) => {
 
 
 export const getAllPosts = async (req, res) => {
-    try{
+    try {
         const user = req.user;
-        const posts = await Post.find({ userId: user._id, active: true }).sort({ createdAt: -1 }).populate("userId", "username name profilePicture");
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        const posts = await Post.find({ userId: user._id, active: true }).sort({ createdAt: -1 }).populate("userId", "username name profilePicture").skip(skip).limit(limit);
+        return res.status(200).json(posts);
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+}
+
+export const getFeed = async (req, res) => {
+    try {
+        const user = req.user;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        const connections = await ConnectionRequest.find({
+            $or: [{ userId: user._id }, { connectionId: user._id }],
+            status_accepted: true
+        });
+        const friendIds = connections.map(conn => {
+            return conn.userId.toString() === user._id.toString() ? conn.connectionId : conn.userId;
+        });
+        friendIds.push(user._id);
+
+        const posts = await Post.find({userId: { $in: friendIds }, active: true }).sort({ createdAt: -1 }).populate("userId", "username name profilePicture").skip(skip).limit(limit);
         return res.status(200).json(posts);
     } catch (error) {
         return res.status(500).json({ message: error.message });
@@ -103,7 +131,7 @@ export const deletePost = async (req, res) => {
 export const commentPost = async (req, res) => {
     try {
         const {post_id, comment} = req.body;
-        if(!token || !post_id || !comment || comment.trim() === '') return res.status(400).json({message: "All fields are required"});
+        if(!post_id || !comment || comment.trim() === '') return res.status(400).json({message: "All fields are required"});
         const user = req.user;
         const post = await Post.findOne({ _id: post_id });
         if (!post) return res.status(400).json({ message: "Post not found" });
@@ -153,16 +181,24 @@ export const deleteComment = async (req, res) => {
 
 export const likePost = async (req, res) => {
     const {postId} = req.body;
-    try{
+    try {
         const user = req.user;
-        const post = await Post.findOne({_id: postId});
+        const post = await Post.findById(postId);
         if(!post) return res.status(400).json({message: "Post not found"});
-        if(post.likes.toString().includes(user._id.toString())) return res.status(400).json({message: "You have already liked this post"});
-        post.likes.push(user._id);
-        await post.save();
+        
+        // Check if they already liked it using the new scalable Collection!
+        const existingLike = await Like.findOne({ postId: post._id, userId: user._id });
+        if (existingLike) {
+            return res.status(400).json({message: "You have already liked this post"});
+        }
+        
+        // Create a new independent Like document
+        const newLike = new Like({ postId: post._id, userId: user._id });
+        await newLike.save();
+        
         return res.status(200).json({message: "Post liked successfully"});
-    }catch(e){
-        return res.status(500).json({message: e.message})
+    } catch(e) {
+        return res.status(500).json({message: e.message});
     }
 }
 
@@ -185,6 +221,20 @@ export const searchPosts = async (req, res) => {
             ...hit._source // This contains the body, userid, and pubat
         }));
         return res.status(200).json(cleanResults);
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+}
+
+export const reindexAllPosts = async (req, res) => {
+    try {
+        const allPosts = await Post.find({ active: true });
+        for (const post of allPosts) {
+            await elasticQueue.add('index_post', { postId: post._id });
+        }
+        return res.status(200).json({ 
+            message: `Successfully queued ${allPosts.length} posts to be reindexed!` 
+        });
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }

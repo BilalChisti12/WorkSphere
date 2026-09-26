@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { activeCheck, createPost, schedulePost, searchPosts, getAllPosts, deletePost, commentPost, getComments, deleteComment, likePost } from "../controllers/posts.controller.js";
+import { activeCheck, createPost, schedulePost, searchPosts, getAllPosts, getFeed, deletePost, commentPost, getComments, deleteComment, likePost, reindexAllPosts} from "../controllers/posts.controller.js";
 import { authenticate } from '../middleware/auth.middleware.js';
 import multer from "multer";
 const router = Router();
@@ -9,7 +9,8 @@ const storage = multer.diskStorage({
         cb(null,'uploads/')
     },
     filename: (req,file,cb)=>{
-        cb(null,file.originalname);
+        const prefix = Date.now()+'-'+crypto.randomBytes(16).toString('hex');
+        cb(null,prefix+file.originalname);
     }
 });
 
@@ -27,5 +28,7 @@ router.route('/post/all_comments').get(authenticate,getComments);
 router.route('/post/delete_comment').post(authenticate,deleteComment);
 router.route('/post/like').post(authenticate,likePost);
 router.route('/search_posts').get(searchPosts);
+router.route('/admin/search/reindex').post(authenticate, reindexAllPosts);
+router.route('/feed').get(authenticate, getFeed);
 
 export default router;
