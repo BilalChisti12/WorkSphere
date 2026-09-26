@@ -4,9 +4,3 @@ node_modules/
 .next/
 dist/
 build/
-
-backend_audit_remediation_guide.md
-scheduler_intergration_plan.md
-
-
-.gitignore
