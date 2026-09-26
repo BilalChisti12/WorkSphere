@@ -8,19 +8,15 @@ import Post from '../models/posts.model.js';
 import Comment from '../models/comments.model.js';
 import Like from '../models/like.model.js';
 import ConnectionRequest from "../models/connection.model.js";
-import { postQueue } from '../queue/postQueue.js';
+import { postQueue, checkRateLimitStatus } from '../queue/postQueue.js';
 import { elasticClient } from '../elasticClient.js';
 import { elasticQueue } from '../queue/elasticQueue.js';
 
 export const activeCheck = async (req, res) => {
     return res.status(200).json({
         message: "Server is active",
-
     });
 }
-
-
-
 
 export const createPost = async (req, res) => {
     const {body} = req.body;
@@ -28,15 +24,32 @@ export const createPost = async (req, res) => {
         const user = req.user;
         const mediaFile = req.file || '';
         if (!body && !req.file) return res.status(400).json({ message: "Post body or media is required" });
+
         const post = new Post({
             userId: user._id,
             body: body || '',
             media: mediaFile ? mediaFile.filename : '',
             fileType: mediaFile ? mediaFile.mimetype.split('/')[1] : '',
+            active: false,
         });
         await post.save();
-        await elasticQueue.add('index_post', { postId: post._id });
-        return res.status(200).json({ message: "Post created successfully" });
+        
+        await postQueue.add(
+            'publish_post',
+            { postId: post._id },
+            { 
+                delay: 0,
+                jobId: post._id.toString()
+            }
+        );
+
+        const isHit = await checkRateLimitStatus(user._id, new Date());
+        let message = "Post queued successfully";
+        if (isHit) {
+            message = "Hourly limit hit! Your post will be automatically delayed to the next hour.";
+        }
+
+        return res.status(200).json({ message });
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
@@ -50,6 +63,7 @@ export const schedulePost = async (req, res) => {
         const delay = new Date(scheduledTime).getTime() - Date.now();
         if (delay < 0) return res.status(400).json({ message: "Scheduled time must be in the future" });
         const mediaFile = req.file || '';
+        
         const post = new Post({
             userId: user._id,
             body: body || '',
@@ -67,8 +81,13 @@ export const schedulePost = async (req, res) => {
                 jobId: post._id.toString() //idm
             }
         );
+        const isHit = await checkRateLimitStatus(user._id, new Date(scheduledTime));
+        let message = "Post scheduled successfully!";
+        if (isHit) {
+            message = "Your Hourly limit hit! Your scheduled post will be automatically delayed to the hour after.";
+        }
 
-        return res.status(200).json({ message: "Post scheduled successfully!" });
+        return res.status(200).json({ message });
 
     } catch (error) {
         return res.status(500).json({ message: error.message });
@@ -199,6 +218,22 @@ export const likePost = async (req, res) => {
         return res.status(200).json({message: "Post liked successfully"});
     } catch(e) {
         return res.status(500).json({message: e.message});
+    }
+}
+
+export const getLikes = async (req, res) => {
+    try {
+        const { post_id } = req.query;
+        if (!post_id) return res.status(400).json({ message: "Post ID is required" });
+        const post = await Post.findOne({ _id: post_id });
+        if (!post) return res.status(400).json({ message: "Post not found" });
+        const likes = await Like.find({ postId: post_id }).populate("userId", "username name profilePicture");
+        return res.status(200).json({
+            count: likes.length,
+            likes: likes
+        });
+    } catch (e) {
+        return res.status(500).json({ message: e.message });
     }
 }
 

@@ -123,12 +123,25 @@ export const logout = async (req, res) => {
 
 export const connectSlack = async (req, res) => {
     const { token } = req.query;
-    const slackURL = `https://slack.com/oauth/v2/authorize?client_id=${process.env.SLACK_CLIENT_ID}&user_scope=chat:write&state=${token}`;
+    
+    const code_verifier = crypto.randomBytes(32).toString('hex');
+    const code_challenge = crypto.createHash('sha256').update(code_verifier).digest('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+        
+    const combinedState = `${token}___${code_verifier}`;
+
+    const redirectUri = encodeURIComponent(`${process.env.BACKEND_URL || 'http://localhost:8080'}/slack/callback`);
+    const slackURL = `https://slack.com/oauth/v2/authorize?client_id=${process.env.SLACK_CLIENT_ID}&user_scope=chat:write&state=${combinedState}&redirect_uri=${redirectUri}&code_challenge=${code_challenge}&code_challenge_method=S256`;
     res.redirect(slackURL);
 }
 
 export const slackCallback = async (req, res) => {
     const { code, state } = req.query;
+    
+    const [token, code_verifier] = (state || '').split('___');
+    
     try {
         const response = await fetch('https://slack.com/api/oauth.v2.access', {
             method: 'POST',
@@ -136,13 +149,15 @@ export const slackCallback = async (req, res) => {
             body: new URLSearchParams({
                 client_id: process.env.SLACK_CLIENT_ID,
                 client_secret: process.env.SLACK_CLIENT_SECRET,
-                code: code
+                code: code,
+                redirect_uri: `${process.env.BACKEND_URL || 'http://localhost:8080'}/slack/callback`,
+                code_verifier: code_verifier || ''
             })
         });
         const data = await response.json();
         if (data.ok) {
             await User.updateOne(
-                { token: state },
+                { token: token },
                 {
                     slackToken: data.authed_user.access_token,
                     slackUserId: data.authed_user.id
@@ -209,7 +224,7 @@ export const updateUserProfile = async (req, res) => {
 export const getUserProfile = async (req, res) => {
     try {
         const user = req.user
-        const userProfile = await Profile.findOne({ userId: user._id }).populate("userId", "name email username profilePicture");
+        const userProfile = await Profile.findOne({ userId: user._id }).populate("userId", "name email username profilePicture slackUserId");
         return res.json(userProfile);
 
     } catch (error) {

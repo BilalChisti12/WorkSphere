@@ -6,7 +6,6 @@ import { elasticQueue } from './elasticQueue.js';
 
 const worker = new Worker('PostQueue', async (job) => {
     console.log(`Processing scheduled post. Job ID: ${job.id}`);
-
     try {
         const post = await Post.findById(job.data.postId);
         if (!post) return;
@@ -14,11 +13,16 @@ const worker = new Worker('PostQueue', async (job) => {
         
         const currentHour = new Date().toISOString().slice(0, 13);
         const redisKey = `ratelimit:posts:${post.userId}:${currentHour}`;
-        const currentCount = parseInt(await redisConnection.get(redisKey) || '0');
+        const currentCount = await redisConnection.incr(redisKey);
+        if (currentCount === 1) {
+            await redisConnection.expire(redisKey, 3600);
+        }
+        
         const maxPerHour = parseInt(process.env.MAX_POSTS_PER_HOUR || '5');
-        if (currentCount >= maxPerHour) {
+        if (currentCount > maxPerHour) {
+            await redisConnection.decr(redisKey);
             const nextHour = new Date();
-            nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0);
+            nextHour.setUTCHours(nextHour.getUTCHours() + 1, 0, 0, 0);
             const randomJitterMs = Math.floor(Math.random() * 60000);
             await job.moveToDelayed(nextHour.getTime() + randomJitterMs, job.token);
             const userForSlack = await User.findById(post.userId);
@@ -54,8 +58,6 @@ const worker = new Worker('PostQueue', async (job) => {
         );
         if (!atomicallyUpdatedPost) return;
         await elasticQueue.add('index_post', { postId: atomicallyUpdatedPost._id });
-        await redisConnection.incr(redisKey);
-        await redisConnection.expire(redisKey, 3600);
     } catch (error) {
         if (error.name === 'DelayedError') throw error;
         throw error;
