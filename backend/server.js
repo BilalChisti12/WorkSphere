@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import postRoutes from './routes/posts.routes.js';
 import userRoutes from './routes/user.routes.js';
 import './queue/postWorker.js'
+import './queue/elasticWorker.js';
 import { ExpressAdapter } from '@bull-board/express';
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';

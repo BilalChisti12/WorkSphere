@@ -13,7 +13,7 @@
   "dependencies": {
     "@bull-board/api": "^9.10.1",
     "@bull-board/express": "^9.10.1",
-    "@elastic/elasticsearch": "^9.5.1",
+    "@elastic/elasticsearch": "^8.19.2",
     "bcrypt": "^6.0.0",
     "bullmq": "^6.3.8",
     "cors": "^2.8.6",
