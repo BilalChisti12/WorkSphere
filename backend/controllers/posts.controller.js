@@ -239,7 +239,6 @@ export const getLikes = async (req, res) => {
 
 
 export const searchPosts = async (req, res) => {
-    // We expect the frontend to call: /search_posts?query=javascript
     const { query } = req.query;
     if (!query) return res.status(400).json({ message: "Please provide a search query" });
     try {
@@ -251,11 +250,11 @@ export const searchPosts = async (req, res) => {
                 }
             }
         });
-        const cleanResults = result.hits.hits.map(hit => ({
-            _id: hit._id,
-            ...hit._source // This contains the body, userid, and pubat
-        }));
-        return res.status(200).json(cleanResults);
+        const postIds = result.hits.hits.map(hit => hit._id);
+        const fullPosts = await Post.find({ _id: { $in: postIds }, active: true }).populate("userId", "username name profilePicture");
+        const orderedPosts = postIds.map(id => fullPosts.find(p => p._id.toString() === id.toString())).filter(p => p);
+        
+        return res.status(200).json(orderedPosts);
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }

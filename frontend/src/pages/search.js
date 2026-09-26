@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import { searchPosts } from '../lib/api/search';
+import PostCard from '../components/posts/PostCard';
 import styles from './search.module.css';
 
 function timeAgo(dateStr) {
@@ -95,17 +96,6 @@ export default function SearchPage() {
             </button>
           </form>
 
-          {/* Note about Elasticsearch results */}
-          {!searched && (
-            <div className={styles.infoBox}>
-              <InfoIcon />
-              <span>
-                Search queries are matched against post content using Elasticsearch relevance scoring.
-                Results are not paginated (max 10 per search). The author name is not available in search results due to a backend limitation.
-              </span>
-            </div>
-          )}
-
           {/* Loading */}
           {isLoading && (
             <div className={styles.resultsList}>
@@ -144,16 +134,7 @@ export default function SearchPage() {
               </div>
               <div className={styles.resultsList}>
                 {results.map((post) => (
-                  <div key={post._id} className={styles.resultCard}>
-                    <div className={styles.resultMeta}>
-                      {/* userId is raw string in search results — author name unavailable per spec */}
-                      <span className={styles.resultAuthorNote}>Post</span>
-                      {post.publishedAt && (
-                        <span className={styles.resultTime}>{timeAgo(post.publishedAt)}</span>
-                      )}
-                    </div>
-                    <p className={styles.resultBody}>{post.body}</p>
-                  </div>
+                  <PostCard key={post._id} post={post} />
                 ))}
               </div>
             </>

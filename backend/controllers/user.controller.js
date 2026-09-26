@@ -264,7 +264,45 @@ export const getAllUserProfile = async (req, res) => {
         }).select('_id');
         const userIds = matchingUsers.map(user => user._id);
         const profiles = await Profile.find({ userId: { $in: userIds } }).populate("userId", "name username email profilePicture").skip(skip).limit(limit);
-        return res.json(profiles);
+        const myUserId = req.user._id;
+        const connectionRequests = await ConnectionRequest.find({
+            $or: [
+                { userId: myUserId, connectionId: { $in: userIds } },
+                { userId: { $in: userIds }, connectionId: myUserId }
+            ]
+        });
+
+        const profilesWithStatus = profiles.map(profile => {
+            const profileObj = profile.toObject();
+            
+            if (!profileObj.userId || !profileObj.userId._id) {
+                profileObj.connectionStatus = 'none';
+                return profileObj;
+            }
+            
+            if (profileObj.userId._id.toString() === myUserId.toString()) {
+                profileObj.connectionStatus = 'self';
+                return profileObj;
+            }
+
+            const conn = connectionRequests.find(c => 
+                (c.userId.toString() === myUserId.toString() && c.connectionId.toString() === profileObj.userId._id.toString()) ||
+                (c.connectionId.toString() === myUserId.toString() && c.userId.toString() === profileObj.userId._id.toString())
+            );
+
+            if (!conn) {
+                profileObj.connectionStatus = 'none';
+            } else if (conn.status_accepted) {
+                profileObj.connectionStatus = 'accepted';
+            } else if (conn.userId.toString() === myUserId.toString()) {
+                profileObj.connectionStatus = 'pending_sent';
+            } else {
+                profileObj.connectionStatus = 'pending_received';
+            }
+            return profileObj;
+        });
+
+        return res.json(profilesWithStatus);
     } catch (e) {
         return res.status(500).json({ message: e.message });
     }
@@ -302,7 +340,7 @@ export const sendConnectionRequest = async (req, res) => {
         const user = req.user;
         const connectionUser = await User.findOne({ _id: connectionId });
         if (!connectionUser) return res.status(404).json({ mesage: "Target User not found" });
-        if (user._id === connectionId) return res.status(400).json({ message: "You can't send connection request to yourself" });
+        if (user._id.toString() === connectionId.toString()) return res.status(400).json({ message: "You can't send connection request to yourself" });
         const existingReq = await ConnectionRequest.findOne({ userId: user._id, connectionId: connectionUser._id });
 
         if (existingReq) return res.status(400).json({ message: "Connection request already sent" });

@@ -34,7 +34,7 @@ router.route('/logout').post(authenticate, logout);
 router.route('/user_update').post(authenticate, updateUserProfile);
 router.route('/get_user_profile').get(authenticate, getUserProfile);
 router.route('/update_profile_data').post(authenticate, updateProfileData);
-router.route('/user/search').get(getAllUserProfile);
+router.route('/user/search').get(authenticate, getAllUserProfile);
 router.route('/user/profile/:id').get(authenticate, getProfileById);
 router.route('/user/download_resume').get(downloadProfile);
 router.route('/user/connections/send_connection_request').post(authenticate, sendConnectionRequest);

@@ -10,7 +10,7 @@ import { ExpressAdapter } from '@bull-board/express';
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { postQueue } from './queue/postQueue.js';
-
+import { authenticate } from './middleware/auth.middleware.js';
 
 
 const app = express();

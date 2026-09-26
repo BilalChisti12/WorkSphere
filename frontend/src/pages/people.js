@@ -192,7 +192,19 @@ export default function PeoplePage() {
                       )}
 
                       <div className={styles.personActions}>
-                        {alreadySent ? (
+                        {profile.connectionStatus === 'self' ? (
+                          <span className="badge badge-neutral" style={{ padding: '6px 14px' }}>
+                            You
+                          </span>
+                        ) : profile.connectionStatus === 'accepted' ? (
+                          <span className="badge badge-success" style={{ padding: '6px 14px' }}>
+                            <CheckIcon /> Connected
+                          </span>
+                        ) : profile.connectionStatus === 'pending_received' ? (
+                          <span className="badge badge-secondary" style={{ padding: '6px 14px' }}>
+                            Respond
+                          </span>
+                        ) : alreadySent || profile.connectionStatus === 'pending_sent' ? (
                           <span className="badge badge-primary" style={{ padding: '6px 14px' }}>
                             <CheckIcon /> Requested
                           </span>
