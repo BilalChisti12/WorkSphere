@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useToast } from '../../context/ToastContext';
-import { getMyOutgoingRequests } from '../../lib/api/users';
+import { getMyOutgoingRequests, getMyIncomingRequests } from '../../lib/api/users';
 import { getImageUrl } from '../../lib/api/client';
 import styles from './connections.module.css';
 
@@ -20,8 +20,12 @@ export default function ConnectionsPage() {
 
   useEffect(() => {
     setIsLoading(true);
-    getMyOutgoingRequests()
-      .then((data) => setRequests(data.reqs || []))
+    Promise.all([getMyOutgoingRequests(), getMyIncomingRequests()])
+      .then(([outgoingData, incomingData]) => {
+        const outgoing = outgoingData.reqs || [];
+        const incoming = Array.isArray(incomingData) ? incomingData : (incomingData.reqs || []);
+        setRequests([...outgoing, ...incoming]);
+      })
       .catch((err) => toast.error(err.message || 'Failed to load connections'))
       .finally(() => setIsLoading(false));
   }, []);
@@ -50,7 +54,7 @@ export default function ConnectionsPage() {
           <div className={styles.header}>
             <div>
               <h1 className={styles.title}>My Connections</h1>
-              <p className={styles.subtitle}>Track your outgoing connection requests</p>
+              <p className={styles.subtitle}>Track your incoming and outgoing connections</p>
             </div>
             <div className={styles.headerActions}>
               <Link href="/connections/requests" className="btn btn-secondary btn-sm">
@@ -97,7 +101,7 @@ export default function ConnectionsPage() {
           ) : (
             <div className={styles.list}>
               {filtered.map((req) => {
-                const person = req.connectionId;
+                const person = req.connectionId?.name ? req.connectionId : req.userId;
                 const pic = person?.profilePicture ? getImageUrl(person.profilePicture) : null;
                 const initials = person?.name?.slice(0, 2).toUpperCase() || '??';
                 const status = STATUS_LABELS[req.status_accepted];
