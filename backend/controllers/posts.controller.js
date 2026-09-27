@@ -1,9 +1,9 @@
-import User from "../models/user.model.js"
 import bcrypt from 'bcrypt';
 import mongoose from "mongoose";
 import path from 'path';
 import crypto from 'crypto';
 import fs from 'fs';
+import User from "../models/user.model.js"
 import Profile from '../models/profile.model.js';
 import Post from '../models/posts.model.js';
 import Comment from '../models/comments.model.js';
@@ -22,7 +22,7 @@ export const activeCheck = async (req, res) => {
 export const createPost = async (req, res) => {
     const { body } = req.body;
     try {
-        const user = req.user;
+        const user = req.user; //after auth
         const mediaFile = req.file || '';
         if (!body && !req.file) return res.status(400).json({ message: "Post body or media is required" });
 
@@ -47,7 +47,7 @@ export const createPost = async (req, res) => {
         const isHit = await checkRateLimitStatus(user._id, new Date());
         let message = "Post queued successfully";
         if (isHit) {
-            message = "Hourly limit hit! Your post will be automatically delayed to the next hour.";
+            message = "Barkhuddar, thoda tham jaaiye, aapka ek ghante ka limit cross ho gaya hai.";
         }
 
         return res.status(200).json({ message });
@@ -85,12 +85,12 @@ export const schedulePost = async (req, res) => {
         const isHit = await checkRateLimitStatus(user._id, new Date(scheduledTime));
         let message = "Post scheduled successfully!";
         if (isHit) {
-            message = "Your Hourly limit hit! Your scheduled post will be automatically delayed to the hour after.";
+            message = "Barkhuddar, thoda tham jaaiye, aapka ek ghante ka limit cross ho gaya hai.";
         }
 
         return res.status(200).json({ message });
 
-        // Cloudinary file cleanup would require API call here, skipping for now
+        // Cloudinary file delete nhi kr rha hu. free plan hai, to and fro krunga toh limit khatm hojaega
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
