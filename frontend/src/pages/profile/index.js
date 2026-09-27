@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { getMyPosts } from '../../lib/api/posts';
-import { downloadResume } from '../../lib/api/users';
+import { getResumeUrl } from '../../lib/api/users';
 import { getImageUrl } from '../../lib/api/client';
 import PostCard from '../../components/posts/PostCard';
 import styles from './profile.module.css';
@@ -99,13 +99,15 @@ export default function MyProfilePage() {
                     <Link href="/profile/edit" className="btn btn-secondary btn-sm">
                       <EditIcon /> Edit profile
                     </Link>
-                    <button
+                    <a
+                      href={getResumeUrl(user._id)}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="btn btn-ghost btn-sm"
-                      onClick={() => downloadResume(user._id)}
                       title="Download resume PDF"
                     >
                       <DownloadIcon /> Resume
-                    </button>
+                    </a>
                   </div>
                 </div>
                 <p className={styles.username}>@{user.username}</p>

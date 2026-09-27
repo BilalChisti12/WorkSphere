@@ -35,10 +35,8 @@ export const updateProfilePic = (file) => {
 export const searchUsers = (query = '', page = 1, limit = 10) =>
   apiClient(`/user/search?query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
 
-// PDF download - use window.open, not fetch (binary stream)
-export const downloadResume = (userId) => {
-  const url = `${getBackendUrl()}/user/download_resume?id=${userId}`;
-  window.open(url, '_blank');
+export const getResumeUrl = (userId) => {
+  return `${getBackendUrl()}/user/download_resume?id=${userId}`;
 };
 
 // POST /user/connections/send_connection_request

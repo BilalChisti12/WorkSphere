@@ -35,14 +35,23 @@ export const createPost = async (req, res) => {
         });
         await post.save();
 
-        await postQueue.add(
-            'publish_post',
-            { postId: post._id },
-            {
-                delay: 0,
-                jobId: post._id.toString()
+        try {
+            await postQueue.add(
+                'publish_post',
+                { postId: post._id },
+                {
+                    delay: 0,
+                    jobId: post._id.toString()
+                }
+            );
+        } catch (queueError) {
+            await Post.findByIdAndDelete(post._id);
+            if (mediaFile && mediaFile.filename) {
+                const mediaPath = path.join("uploads", mediaFile.filename);
+                if (fs.existsSync(mediaPath)) fs.unlinkSync(mediaPath);
             }
-        );
+            return res.status(500).json({ message: "Queue service is currently unavailable. Please try posting later." });
+        }
 
         const isHit = await checkRateLimitStatus(user._id, new Date());
         let message = "Post queued successfully";
@@ -78,15 +87,23 @@ export const schedulePost = async (req, res) => {
         });
         await post.save();
 
-        
-        await postQueue.add(
-            'publish_post',
-            { postId: post._id },
-            {
-                delay: delay,
-                jobId: post._id.toString() //idm
+        try {
+            await postQueue.add(
+                'publish_post',
+                { postId: post._id },
+                {
+                    delay: delay,
+                    jobId: post._id.toString() //idm
+                }
+            );
+        } catch (queueError) {
+            await Post.findByIdAndDelete(post._id);
+            if (mediaFile && mediaFile.filename) {
+                const mediaPath = path.join("uploads", mediaFile.filename);
+                if (fs.existsSync(mediaPath)) fs.unlinkSync(mediaPath);
             }
-        );
+            return res.status(500).json({ message: "Queue service is currently unavailable. Please try scheduling later." });
+        }
         const isHit = await checkRateLimitStatus(user._id, new Date(scheduledTime));
         let message = "Post scheduled successfully!";
         if (isHit) {

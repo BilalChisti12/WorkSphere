@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { getUserProfile, sendConnectionRequest, downloadResume } from '../../lib/api/users';
+import { getUserProfile, sendConnectionRequest, getResumeUrl } from '../../lib/api/users';
 import { getImageUrl } from '../../lib/api/client';
 import styles from './userProfile.module.css';
 
@@ -135,12 +135,14 @@ export default function UserProfilePage() {
                         <CheckIcon /> Request sent
                       </span>
                     )}
-                    <button
+                    <a
+                      href={getResumeUrl(user._id)}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="btn btn-secondary btn-sm"
-                      onClick={() => downloadResume(user._id)}
                     >
                       <DownloadIcon /> Download resume
-                    </button>
+                    </a>
                   </div>
                 )}
 
