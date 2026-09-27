@@ -27,7 +27,7 @@ const worker = new Worker('PostQueue', async (job) => {
             await job.moveToDelayed(nextHour.getTime() + randomJitterMs, job.token);
             const userForSlack = await User.findById(post.userId);
             if (userForSlack && userForSlack.slackToken) {
-                const slackSpamKey = `ratelimit_slack_notified:${post.userId}:${currentHour}`;
+                const slackSpamKey = `ratelimit_slack_notified:${post.userId}`;
                 const alreadyNotified = await redisConnection.get(slackSpamKey);
                 if (!alreadyNotified) {
                     try {

@@ -11,10 +11,7 @@ export default function SettingsPage() {
   const toast = useToast();
   const [isDisconnecting, setIsDisconnecting] = useState(false);
 
-  const handleSlackConnect = () => {
-    if (!token) return;
-    connectSlack(token);
-    // No API to verify connection. Mark locally as connected.
+  const handleSlackConnectInfo = () => {
     // User must close the Slack window once connected.
     toast.info('Complete the Slack authorization in the opened window, then click "Mark as connected" below.');
   };
@@ -102,9 +99,15 @@ export default function SettingsPage() {
             <div className={styles.slackActions}>
               {!slackConnected ? (
                 <>
-                  <button className="btn btn-primary" onClick={handleSlackConnect}>
+                  <a 
+                    className="btn btn-primary" 
+                    href={`${backendUrl}/slack/connect?token=${token}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={handleSlackConnectInfo}
+                  >
                     <SlackLogoIcon /> Connect Slack
-                  </button>
+                  </a>
                   <button className="btn btn-ghost btn-sm" onClick={handleMarkConnected}>
                     Already connected? Mark as connected
                   </button>
