@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { ToastProvider } from '../context/ToastContext';
 import Navbar from '../components/common/Navbar';
+import Background from '../components/common/Background';
 
 const PUBLIC_ROUTES = ['/login', '/register'];
 
@@ -12,6 +13,10 @@ function AppContent({ Component, pageProps }) {
   const router = useRouter();
 
   useEffect(() => {
+    // Initialize theme
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
     if (isLoading) return;
     const isPublic = PUBLIC_ROUTES.includes(router.pathname);
     if (!isAuthenticated && !isPublic) {
@@ -52,6 +57,7 @@ function AppContent({ Component, pageProps }) {
 
   return (
     <>
+      <Background />
       {showNav && <Navbar />}
       <main style={{ minHeight: '100vh', paddingTop: showNav ? '64px' : 0 }}>
         <Component {...pageProps} />

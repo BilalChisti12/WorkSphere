@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import mongoose from "mongoose";
 import path from 'path';
 import crypto from 'crypto';
+import fs from 'fs';
 import Profile from '../models/profile.model.js';
 import Post from '../models/posts.model.js';
 import Comment from '../models/comments.model.js';
@@ -28,7 +29,7 @@ export const createPost = async (req, res) => {
         const post = new Post({
             userId: user._id,
             body: body || '',
-            media: mediaFile ? mediaFile.filename : '',
+            media: mediaFile ? mediaFile.path : '',
             fileType: mediaFile ? mediaFile.mimetype.split('/')[1] : '',
             active: false,
         });
@@ -50,6 +51,7 @@ export const createPost = async (req, res) => {
         }
 
         return res.status(200).json({ message });
+        // Cloudinary file cleanup would require API call here, skipping for now
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
@@ -67,7 +69,7 @@ export const schedulePost = async (req, res) => {
         const post = new Post({
             userId: user._id,
             body: body || '',
-            media: mediaFile ? mediaFile.filename : '',
+            media: mediaFile ? mediaFile.path : '',
             fileType: mediaFile ? mediaFile.mimetype.split('/')[1] : '',
             active: false,
         });
@@ -89,6 +91,7 @@ export const schedulePost = async (req, res) => {
 
         return res.status(200).json({ message });
 
+        // Cloudinary file cleanup would require API call here, skipping for now
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
@@ -139,6 +142,7 @@ export const deletePost = async (req, res) => {
         const post = await Post.findOne({ _id: postId });
         if (!post) return res.status(400).json({ message: "Post not found" });
         if (post.userId.toString() !== user._id.toString()) return res.status(400).json({ message: "You are not authorized to delete this post" });
+        // Skipping local file deletion since media is hosted on Cloudinary
         await post.deleteOne({ _id: postId });
         await Comment.deleteMany({postId: postId});
         return res.status(200).json({ message: "Post deleted successfully" });

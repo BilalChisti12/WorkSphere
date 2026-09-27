@@ -13,32 +13,132 @@ import jwt from "jsonwebtoken";
 const convertUserDataToPDF = async (userData, res) => {
     if (!userData) throw new Error("User Data Missing");
     if (!userData.userId) throw new Error("User ID missing");
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=${userData.userId.name}_resume.pdf`);
-    const doc = new PDFDocument();
+    const doc = new PDFDocument({ size: "A4", margins: { top: 45, bottom: 45, left: 42, right: 42 }, bufferPages: true });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${userData.userId.name}_resume.pdf"`);
     doc.pipe(res);
-    const imagePath = path.join("uploads", userData.userId.profilePicture);
-    if (fs.existsSync(imagePath)) {
-        doc.image(imagePath, { width: 100, height: 100 });
+    const PAGE_WIDTH = doc.page.width;
+    const PAGE_HEIGHT = doc.page.height;
+    const LEFT = 42;
+    const RIGHT = PAGE_WIDTH - 42;
+    const CONTENT_WIDTH = RIGHT - LEFT;
+    const BLACK = "#111111";
+    const DARK_GRAY = "#333333";
+    const GRAY = "#666666";
+    const LINE = "#777777";
+    const normalFont = () => doc.font("Times-Roman");
+    const boldFont = () => doc.font("Times-Bold");
+    const italicFont = () => doc.font("Times-Italic");
+    normalFont();
+    doc.fillColor(BLACK);
+    const addSectionHeading = (title) => {
+        if (doc.y > PAGE_HEIGHT - 100) doc.addPage();
+        doc.moveDown(0.35);
+        doc.font("Times-Roman").fontSize(13).fillColor(BLACK).text(title.toUpperCase(), LEFT, doc.y, { width: CONTENT_WIDTH, characterSpacing: 0.5 });
+        const lineY = doc.y + 4;
+        doc.moveTo(LEFT, lineY).lineTo(RIGHT, lineY).lineWidth(0.5).strokeColor(LINE).stroke();
+        doc.y = lineY + 8;
+    };
+    const addBullet = (text) => {
+        const bulletX = LEFT;
+        const textX = LEFT + 11;
+        const textWidth = CONTENT_WIDTH - 11;
+        doc.font("Times-Roman").fontSize(9.5).fillColor(BLACK).text("–", bulletX, doc.y, { width: 8 });
+        doc.text(text, textX, doc.y, { width: textWidth, lineGap: 0.5, paragraphGap: 2 });
+        doc.moveDown(0.15);
+    };
+    const addKeyValue = (key, value) => {
+        doc.font("Times-Bold").fontSize(9.5).fillColor(BLACK).text(`${key}:`, LEFT, doc.y, { continued: true });
+        doc.font("Times-Roman").fontSize(9.5).text(` ${value}`);
+        doc.moveDown(0.05);
+    };
+    const profilePicture = userData.userId.profilePicture;
+    const imagePath = profilePicture ? path.join("uploads", profilePicture) : null;
+    const headerTop = doc.y;
+    if (imagePath && fs.existsSync(imagePath)) {
+        const IMAGE_SIZE = 72;
+        doc.image(imagePath, RIGHT - IMAGE_SIZE, headerTop - 5, { width: IMAGE_SIZE, height: IMAGE_SIZE });
+        doc.rect(RIGHT - IMAGE_SIZE, headerTop - 5, IMAGE_SIZE, IMAGE_SIZE).lineWidth(0.6).strokeColor("#555555").stroke();
     }
-    doc.fontSize(100).text(`Name: ${userData.userId.name}`);
-    doc.fontSize(14).text(`Email: ${userData.userId.email}`);
-    doc.fontSize(14).text(`Bio: ${userData.bio}`);
-    doc.fontSize(14).text(`Current Post: ${userData.currentPost}`);
-    doc.fontSize(14).text("Past Woork: ")
-    userData.pastWork.forEach((work, index) => {
-        doc.fontSize(14).text(`${index + 1}. ${work.company}, ${work.position}, ${work.years}`);
-    })
-    doc.fontSize(14).text("Education: ")
-    userData.education.forEach((education, index) => {
-        doc.fontSize(14).text(`${index + 1}. ${education.school}, ${education.degree}, ${education.fieldOfStudy}`);
-    })
-    doc.fontSize(14).text("Skills: ")
-    userData.skills.forEach((skill, index) => {
-        doc.fontSize(14).text(`${index + 1}. ${skill.skill}, ${skill.priority}`);
-    })
-    doc.end();
+    const name = userData.userId.name || "Unnamed User";
+    doc.font("Times-Roman").fontSize(22).fillColor(BLACK).text(name, LEFT, headerTop, { width: CONTENT_WIDTH - 80, align: "center" });
+    const contactParts = [];
+    if (userData.userId.email) contactParts.push(userData.userId.email);
+    const contactLine = contactParts.join("   |   ");
+    if (contactLine) doc.font("Times-Roman").fontSize(8.5).fillColor(DARK_GRAY).text(contactLine, LEFT, doc.y + 4, { width: CONTENT_WIDTH - 80, align: "center" });
+    doc.y = Math.max(doc.y + 10, headerTop + 78);
+    addSectionHeading("Professional Summary");
+    if (userData.bio) {
+        doc.font("Times-Roman").fontSize(9.5).fillColor(BLACK).text(userData.bio, LEFT, doc.y, { width: CONTENT_WIDTH, lineGap: 0.5, align: "left" });
+        doc.moveDown(0.3);
+    }
+    if (userData.currentPost) {
+        addSectionHeading("Current Position");
+        doc.font("Times-Bold").fontSize(10).fillColor(BLACK).text(userData.currentPost, LEFT, doc.y);
+        doc.moveDown(0.3);
+    }
+    if (Array.isArray(userData.skills) && userData.skills.length > 0) {
+        addSectionHeading("Technical Skills");
+        userData.skills.forEach((skill) => {
+            const skillName = skill?.skill || "";
+            const priority = skill?.priority ? ` (${skill.priority})` : "";
+            if (!skillName) return;
+            doc.font("Times-Bold").fontSize(9.5).fillColor(BLACK).text(`${skillName}${priority}`, LEFT, doc.y, { width: CONTENT_WIDTH, lineGap: 0.3 });
+            doc.moveDown(0.03);
+        });
+        doc.moveDown(0.2);
+    }
+    if (Array.isArray(userData.education) && userData.education.length > 0) {
+    addSectionHeading("Education");
+    userData.education.forEach((education) => {
+        const school = education?.school || "";
+        const degree = education?.degree || "";
+        const field = education?.fieldOfStudy || "";
+        const yearText = education?.years ? String(education.years) : "";
+        const educationY = doc.y;
+
+        doc.font("Times-Bold").fontSize(10).fillColor(BLACK).text(school, LEFT, educationY, {
+            width: CONTENT_WIDTH - 80
+        });
+
+        if (yearText) {
+            doc.font("Times-Roman").fontSize(9).fillColor(BLACK).text(yearText, RIGHT - 80, educationY, {
+                width: 80,
+                align: "right"
+            });
+        }
+
+        doc.y = Math.max(doc.y, educationY + 12);
+
+        const educationDetails = [degree, field].filter(Boolean).join(" - ");
+
+        if (educationDetails) {
+            doc.font("Times-Italic").fontSize(9.5).fillColor(DARK_GRAY).text(educationDetails, LEFT, doc.y);
+        }
+
+        doc.moveDown(0.2);
+    });
 }
+    if (Array.isArray(userData.pastWork) && userData.pastWork.length > 0) {
+        addSectionHeading("Experience");
+        userData.pastWork.forEach((work) => {
+            const company = work?.company || "";
+            const position = work?.position || "";
+            const years = work?.years || "";
+            doc.font("Times-Bold").fontSize(10).fillColor(BLACK).text(position, LEFT, doc.y, { continued: true });
+            if (years) doc.font("Times-Roman").fontSize(9).text(String(years), { align: "right" });
+            else doc.text("");
+            if (company) doc.font("Times-Italic").fontSize(9.5).fillColor(DARK_GRAY).text(company, LEFT, doc.y);
+            doc.moveDown(0.15);
+        });
+    }
+    const range = doc.bufferedPageRange();
+    for (let pageNumber = range.start; pageNumber < range.start + range.count; pageNumber++) {
+        doc.switchToPage(pageNumber);
+        doc.font("Times-Roman").fontSize(7).fillColor(GRAY).text(`${pageNumber + 1}`, LEFT, PAGE_HEIGHT - 25, { width: CONTENT_WIDTH, align: "center" });
+    }
+    doc.end();
+};
 
 
 
@@ -123,13 +223,13 @@ export const logout = async (req, res) => {
 
 export const connectSlack = async (req, res) => {
     const { token } = req.query;
-    
+
     const code_verifier = crypto.randomBytes(32).toString('hex');
     const code_challenge = crypto.createHash('sha256').update(code_verifier).digest('base64')
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=+$/, '');
-        
+
     const combinedState = `${token}___${code_verifier}`;
 
     const redirectUri = encodeURIComponent(`${process.env.BACKEND_URL || 'http://localhost:8080'}/slack/callback`);
@@ -139,9 +239,9 @@ export const connectSlack = async (req, res) => {
 
 export const slackCallback = async (req, res) => {
     const { code, state } = req.query;
-    
+
     const [token, code_verifier] = (state || '').split('___');
-    
+
     try {
         const response = await fetch('https://slack.com/api/oauth.v2.access', {
             method: 'POST',
@@ -187,7 +287,7 @@ export const updateProfilePic = async (req, res) => {
     try {
         const user = req.user;
         if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-        user.profilePicture = req.file.filename;
+        user.profilePicture = req.file.path;
         await user.save();
 
         return res.status(200).json({ message: "Profile picture updated successfully" });
@@ -274,18 +374,18 @@ export const getAllUserProfile = async (req, res) => {
 
         const profilesWithStatus = profiles.map(profile => {
             const profileObj = profile.toObject();
-            
+
             if (!profileObj.userId || !profileObj.userId._id) {
                 profileObj.connectionStatus = 'none';
                 return profileObj;
             }
-            
+
             if (profileObj.userId._id.toString() === myUserId.toString()) {
                 profileObj.connectionStatus = 'self';
                 return profileObj;
             }
 
-            const conn = connectionRequests.find(c => 
+            const conn = connectionRequests.find(c =>
                 (c.userId.toString() === myUserId.toString() && c.connectionId.toString() === profileObj.userId._id.toString()) ||
                 (c.connectionId.toString() === myUserId.toString() && c.userId.toString() === profileObj.userId._id.toString())
             );

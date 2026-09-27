@@ -1,11 +1,11 @@
 .page {
   min-height: 100vh;
-  background: var(--color-bg);
-  padding: var(--space-6) 0 var(--space-16);
+  background: transparent;
+  padding: var(--space-8) 0 var(--space-16);
 }
 
 .container {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 0 var(--space-6);
 }
@@ -57,6 +57,7 @@
   border: 1px solid var(--color-border);
   cursor: pointer;
   transition: all var(--transition-fast);
+  backdrop-filter: blur(8px);
 }
 
 .filterBtn:hover {
@@ -93,12 +94,17 @@
   padding: var(--space-4) var(--space-5);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  transition: border-color var(--transition-fast);
+  border-radius: var(--radius-2xl);
+  transition: all var(--transition-fast);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-sm);
 }
 
 .card:hover {
-  border-color: var(--color-border-2);
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-md);
+  background: var(--color-surface-hover);
 }
 
 .cardAvatar {
@@ -109,7 +115,7 @@
 .avatarFallback {
   width: 44px;
   height: 44px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
   color: white;
   font-weight: 700;
   font-size: var(--font-size-sm);
@@ -118,6 +124,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  border: 2px solid var(--color-border);
 }
 
 .cardInfo {

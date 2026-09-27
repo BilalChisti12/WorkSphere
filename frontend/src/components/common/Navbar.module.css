@@ -4,10 +4,8 @@
   left: 0;
   right: 0;
   z-index: var(--z-sticky);
-  height: 64px;
-  background: rgba(15, 17, 23, 0.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--color-border);
+  height: 72px;
+  background: transparent;
 }
 
 .inner {
@@ -32,15 +30,9 @@
 .logoMark {
   width: 32px;
   height: 32px;
-  background: var(--color-primary);
-  color: white;
-  font-weight: 700;
-  font-size: 16px;
-  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-primary);
 }
 
 .logoText {
@@ -74,12 +66,12 @@
 
 .navLink:hover {
   color: var(--color-text-primary);
-  background: var(--color-surface-2);
+  background: rgba(255,255,255,0.4);
 }
 
 .navLink.active {
   color: var(--color-primary);
-  background: var(--color-primary-light);
+  background: rgba(51,51,85,0.1);
 }
 
 /* Right side */
@@ -138,8 +130,8 @@
   top: calc(100% + 12px);
   right: 0;
   width: 220px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-2);
+  background: var(--color-surface-opaque);
+  border: 1px solid var(--color-border-dark);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
   z-index: var(--z-dropdown);
@@ -170,7 +162,7 @@
 
 .dropdownDivider {
   height: 1px;
-  background: var(--color-border);
+  background: var(--color-border-dark);
   margin: var(--space-1) 0;
 }
 
@@ -227,11 +219,11 @@
 .mobileNav {
   display: none;
   position: fixed;
-  top: 64px;
+  top: 72px;
   left: 0;
   right: 0;
-  background: var(--color-bg-2);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-opaque);
+  border-bottom: 1px solid var(--color-border-dark);
   padding: var(--space-4);
   flex-direction: column;
   gap: var(--space-1);

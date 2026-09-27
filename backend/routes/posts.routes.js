@@ -5,19 +5,7 @@ import multer from "multer";
 import crypto from "crypto";
 const router = Router();
 
-const storage = multer.diskStorage({
-    destination: (req,file,cb)=>{
-        cb(null,'uploads/')
-    },
-    filename: (req,file,cb)=>{
-        const prefix = Date.now()+'-'+crypto.randomBytes(16).toString('hex');
-        cb(null,prefix+file.originalname);
-    }
-});
-
-const upload = multer({
-    storage : storage
-});
+import { uploadCloud as upload } from '../config/cloudinary.js';
 
 router.route('/').get(activeCheck);
 router.route('/upload_post').post(authenticate, upload.single('media'),createPost);

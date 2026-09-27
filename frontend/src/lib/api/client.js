@@ -6,6 +6,7 @@ export const getBackendUrl = () => BASE_URL;
 
 export const getImageUrl = (filename) => {
   if (!filename) return null;
+  if (filename.startsWith('http://') || filename.startsWith('https://')) return filename;
   return `${BASE_URL}/${filename}`;
 };
 

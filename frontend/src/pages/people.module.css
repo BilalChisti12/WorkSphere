@@ -1,11 +1,11 @@
 .page {
   min-height: 100vh;
-  background: var(--color-bg);
-  padding: var(--space-6) 0 var(--space-16);
+  background: transparent;
+  padding: var(--space-8) 0 var(--space-16);
 }
 
 .container {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 var(--space-6);
 }
@@ -95,20 +95,25 @@
 .personCard {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
   padding: var(--space-6) var(--space-5);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: var(--space-2);
-  transition: border-color var(--transition-base), transform var(--transition-base);
+  transition: all var(--transition-base);
   animation: fadeIn 0.25s ease;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-sm);
 }
 
 .personCard:hover {
-  border-color: var(--color-border-2);
+  border-color: var(--color-border-hover);
   transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  background: var(--color-surface-hover);
 }
 
 .personAvatar {
@@ -117,13 +122,13 @@
 }
 
 .avatar {
-  border: 2px solid var(--color-border-2);
+  border: 2px solid var(--color-border);
 }
 
 .avatarFallback {
   width: 72px;
   height: 72px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
   color: white;
   font-size: var(--font-size-xl);
   font-weight: 700;
@@ -131,7 +136,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid var(--color-border-2);
+  border: 2px solid var(--color-border);
 }
 
 .personName {

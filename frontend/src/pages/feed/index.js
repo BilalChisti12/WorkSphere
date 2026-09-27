@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { getFeed } from '../../lib/api/posts';
+import { useAuth } from '../../context/AuthContext';
+import { getImageUrl } from '../../lib/api/client';
 import { useToast } from '../../context/ToastContext';
 import PostCard from '../../components/posts/PostCard';
 import styles from './feed.module.css';
@@ -28,6 +30,7 @@ function PostSkeleton() {
 }
 
 export default function FeedPage() {
+  const { currentUser, isAuthenticated } = useAuth();
   const toast = useToast();
   const [posts, setPosts] = useState([]);
   const [page, setPage] = useState(1);
@@ -35,6 +38,11 @@ export default function FeedPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState(null);
+  const [connectionCount, setConnectionCount] = useState(0);
+
+  const user = currentUser?.userId;
+  const avatarUrl = user?.profilePicture ? getImageUrl(user.profilePicture) : null;
+  const initials = user?.name ? user.name.slice(0, 2).toUpperCase() : '??';
 
   const loadFeed = useCallback(async (pageNum, append = false) => {
     if (append) setIsLoadingMore(true);
@@ -54,7 +62,30 @@ export default function FeedPage() {
 
   useEffect(() => {
     loadFeed(1);
-  }, []);
+    
+    // Fetch connection count
+    const fetchConnections = async () => {
+      try {
+        const { getMyIncomingRequests, getMyOutgoingRequests } = await import('../../lib/api/users');
+        const [incoming, outgoing] = await Promise.all([
+          getMyIncomingRequests(),
+          getMyOutgoingRequests()
+        ]);
+        
+        // Incoming is an array, outgoing returns { reqs: [...] }
+        const incArray = Array.isArray(incoming) ? incoming : [];
+        const outArray = outgoing?.reqs || [];
+        
+        const accepted = [...incArray, ...outArray].filter(req => req.status_accepted === true);
+        setConnectionCount(accepted.length);
+      } catch (err) {
+        console.error("Failed to fetch connection count", err);
+      }
+    };
+    if (isAuthenticated) {
+      fetchConnections();
+    }
+  }, [isAuthenticated]);
 
   const loadMore = async () => {
     const nextPage = page + 1;
@@ -73,6 +104,37 @@ export default function FeedPage() {
       </Head>
       <div className={styles.page}>
         <div className={styles.layout}>
+          
+          {/* Left Sidebar: Profile Card */}
+          <aside className={styles.leftSidebar}>
+            <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+              <div className={styles.profileBanner}></div>
+              <div className={styles.profileContent}>
+                <div className={styles.profileAvatarWrapper}>
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Avatar" className="avatar avatar-xl" style={{ border: '4px solid var(--color-white)' }} />
+                  ) : (
+                    <div className={styles.avatarFallback}>{initials}</div>
+                  )}
+                </div>
+                <h2 className={styles.profileName}>{user?.name}</h2>
+                <p className={styles.profileHeadline}>{currentUser?.currentPost || `@${user?.username}`}</p>
+                
+                <div className="divider" style={{ margin: 'var(--space-4) 0' }}></div>
+                
+                <div className={styles.profileStats}>
+                  <div className={styles.statRow}>
+                    <span className={styles.statLabel}>Connections</span>
+                    <span className={styles.statValue}>{connectionCount}</span>
+                  </div>
+                </div>
+                <Link href="/profile" className="btn btn-secondary btn-sm" style={{ display: 'block', textAlign: 'center', marginTop: 'var(--space-4)', width: '100%' }}>
+                  View Profile
+                </Link>
+              </div>
+            </div>
+          </aside>
+
           {/* Main feed */}
           <div className={styles.feed}>
             {/* Create post CTA */}

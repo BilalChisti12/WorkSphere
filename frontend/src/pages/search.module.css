@@ -1,7 +1,7 @@
 .page {
   min-height: 100vh;
-  background: var(--color-bg);
-  padding: var(--space-6) 0 var(--space-16);
+  background: transparent;
+  padding: var(--space-8) 0 var(--space-16);
 }
 
 .container {
@@ -74,23 +74,26 @@
 /* Info box */
 .infoBox {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   gap: var(--space-3);
   padding: var(--space-4);
-  background: var(--color-primary-light);
-  border: 1px solid rgba(79, 126, 248, 0.2);
+  background: rgba(255,255,255,0.4);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
+  color: var(--color-primary);
   line-height: 1.6;
   margin-bottom: var(--space-5);
-  color: var(--color-primary);
 }
 
 /* Error box */
 .errorBox {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   gap: var(--space-3);
   padding: var(--space-4);
   background: var(--color-danger-light);
@@ -139,14 +142,19 @@
 .resultCard {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
   padding: var(--space-5);
-  transition: border-color var(--transition-fast);
+  transition: all var(--transition-fast);
   animation: fadeIn 0.2s ease;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-sm);
 }
 
 .resultCard:hover {
-  border-color: var(--color-border-2);
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-md);
+  background: var(--color-surface-hover);
 }
 
 .resultMeta {

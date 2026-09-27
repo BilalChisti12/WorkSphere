@@ -58,63 +58,79 @@ export default function LoginPage() {
         <title>Sign In — WorkSphere</title>
       </Head>
       <div className={styles.page}>
-        <div className={styles.panel}>
-          {/* Brand */}
-          <div className={styles.brand}>
-            <div className={styles.brandMark}>W</div>
-            <span className={styles.brandName}>WorkSphere</span>
+        <div className={styles.container}>
+          
+          <div className={styles.heroText}>
+            <h1 className={styles.heroTitle}>WELCOME BACK</h1>
+            <p className={styles.heroSubtitle}>
+              Continue your professional journey on the network for human connection and creative collaboration.
+            </p>
           </div>
 
-          <h1 className={styles.heading}>Welcome back</h1>
-          <p className={styles.subheading}>Sign in to your account to continue</p>
-
-          <form className={styles.form} onSubmit={handleSubmit} noValidate>
-            <div className="form-group">
-              <label className="form-label" htmlFor="email">Email address</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                className={`form-input ${errors.email ? 'error' : ''}`}
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={handleChange}
-                disabled={isSubmitting}
-              />
-              {errors.email && <span className="form-error">{errors.email}</span>}
+          <div className={styles.panel}>
+            {/* Brand */}
+            <div className={styles.brand}>
+              <div className={styles.brandMark}>
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M16 2L2 9.5V22.5L16 30L30 22.5V9.5L16 2Z" fill="var(--color-primary)"/>
+                  <path d="M16 16.5L30 9.5L16 2L2 9.5L16 16.5Z" fill="rgba(255, 255, 255, 0.2)"/>
+                  <path d="M16 30V16.5L2 9.5V22.5L16 30Z" fill="rgba(0, 0, 0, 0.2)"/>
+                </svg>
+              </div>
+              <span className={styles.brandName}>WorkSphere</span>
             </div>
 
-            <div className="form-group">
-              <label className="form-label" htmlFor="password">Password</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                className={`form-input ${errors.password ? 'error' : ''}`}
-                placeholder="Your password"
-                value={form.password}
-                onChange={handleChange}
+            <h2 className={styles.heading}>Sign in</h2>
+            <p className={styles.subheading}>Access your account to continue</p>
+
+            <form className={styles.form} onSubmit={handleSubmit} noValidate>
+              <div className="form-group">
+                <label className="form-label" htmlFor="email">Email address</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  className={`form-input ${errors.email ? 'error' : ''}`}
+                  placeholder="you@example.com"
+                  value={form.email}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                />
+                {errors.email && <span className="form-error">{errors.email}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="password">Password</label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  className={`form-input ${errors.password ? 'error' : ''}`}
+                  placeholder="Your password"
+                  value={form.password}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                />
+                {errors.password && <span className="form-error">{errors.password}</span>}
+              </div>
+
+              <button
+                type="submit"
+                className={`btn btn-primary btn-full btn-lg ${isSubmitting ? 'btn-loading' : ''}`}
                 disabled={isSubmitting}
-              />
-              {errors.password && <span className="form-error">{errors.password}</span>}
-            </div>
+                style={{ marginTop: '8px' }}
+              >
+                {isSubmitting ? '' : 'Sign in'}
+              </button>
+            </form>
 
-            <button
-              type="submit"
-              className={`btn btn-primary btn-full btn-lg ${isSubmitting ? 'btn-loading' : ''}`}
-              disabled={isSubmitting}
-              style={{ marginTop: '8px' }}
-            >
-              {isSubmitting ? '' : 'Sign in'}
-            </button>
-          </form>
-
-          <p className={styles.footer}>
-            Don&apos;t have an account?{' '}
-            <Link href="/register" className={styles.link}>Create account</Link>
-          </p>
+            <p className={styles.footer}>
+              Don&apos;t have an account?{' '}
+              <Link href="/register" className={styles.link}>Create account</Link>
+            </p>
+          </div>
         </div>
       </div>
     </>
