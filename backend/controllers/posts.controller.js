@@ -165,9 +165,9 @@ export const deletePost = async (req, res) => {
 
 export const commentPost = async (req, res) => {
     try {
+        const user = req.user;
         const { post_id, comment } = req.body;
         if (!post_id || !comment || comment.trim() === '') return res.status(400).json({ message: "All fields are required" });
-        const user = req.user;
         const post = await Post.findOne({ _id: post_id });
         if (!post) return res.status(400).json({ message: "Post not found" });
         const commentr = new Comment({
@@ -220,14 +220,10 @@ export const likePost = async (req, res) => {
         const user = req.user;
         const post = await Post.findById(postId);
         if (!post) return res.status(400).json({ message: "Post not found" });
-
-        // Check if they already liked it using the new scalable Collection!
         const existingLike = await Like.findOne({ postId: post._id, userId: user._id });
         if (existingLike) {
             return res.status(400).json({ message: "You have already liked this post" });
         }
-
-        // Create a new independent Like document
         const newLike = new Like({ postId: post._id, userId: user._id });
         await newLike.save();
 
