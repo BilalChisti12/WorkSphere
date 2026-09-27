@@ -4,9 +4,7 @@ import Post from '../models/posts.model.js';
 import { elasticClient } from '../elasticClient.js';
 
 const worker = new Worker('ElasticQueue', async (job) => {
-    const { postId } = job.data; // We grab the Post ID from the task
-    
-    // 1. Fetch the latest post data from our Notebook (MongoDB)
+    const { postId } = job.data;
     const post = await Post.findById(postId);
     if (!post) {
         return; 

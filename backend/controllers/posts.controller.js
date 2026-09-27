@@ -20,8 +20,8 @@ export const activeCheck = async (req, res) => {
 }
 
 export const createPost = async (req, res) => {
-    const {body} = req.body;
-    try{
+    const { body } = req.body;
+    try {
         const user = req.user;
         const mediaFile = req.file || '';
         if (!body && !req.file) return res.status(400).json({ message: "Post body or media is required" });
@@ -34,11 +34,11 @@ export const createPost = async (req, res) => {
             active: false,
         });
         await post.save();
-        
+
         await postQueue.add(
             'publish_post',
             { postId: post._id },
-            { 
+            {
                 delay: 0,
                 jobId: post._id.toString()
             }
@@ -51,7 +51,6 @@ export const createPost = async (req, res) => {
         }
 
         return res.status(200).json({ message });
-        // Cloudinary file cleanup would require API call here, skipping for now
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
@@ -59,13 +58,13 @@ export const createPost = async (req, res) => {
 
 
 export const schedulePost = async (req, res) => {
-    const { body, scheduledTime } = req.body;    
+    const { body, scheduledTime } = req.body;
     try {
         const user = req.user;
         const delay = new Date(scheduledTime).getTime() - Date.now();
         if (delay < 0) return res.status(400).json({ message: "Scheduled time must be in the future" });
         const mediaFile = req.file || '';
-        
+
         const post = new Post({
             userId: user._id,
             body: body || '',
@@ -78,7 +77,7 @@ export const schedulePost = async (req, res) => {
         await postQueue.add(
             'publish_post',
             { postId: post._id },
-            { 
+            {
                 delay: delay,
                 jobId: post._id.toString() //idm
             }
@@ -126,7 +125,7 @@ export const getFeed = async (req, res) => {
         });
         friendIds.push(user._id);
 
-        const posts = await Post.find({userId: { $in: friendIds }, active: true }).sort({ createdAt: -1 }).populate("userId", "username name profilePicture").skip(skip).limit(limit);
+        const posts = await Post.find({ userId: { $in: friendIds }, active: true }).sort({ createdAt: -1 }).populate("userId", "username name profilePicture").skip(skip).limit(limit);
         return res.status(200).json(posts);
     } catch (error) {
         return res.status(500).json({ message: error.message });
@@ -138,13 +137,13 @@ export const deletePost = async (req, res) => {
     const { postId } = req.body;
     try {
         const user = req.user;
-        if(!mongoose.Types.ObjectId.isValid(postId)) return res.status(400).json({message: "Invalid Post ID"});
+        if (!mongoose.Types.ObjectId.isValid(postId)) return res.status(400).json({ message: "Invalid Post ID" });
         const post = await Post.findOne({ _id: postId });
         if (!post) return res.status(400).json({ message: "Post not found" });
         if (post.userId.toString() !== user._id.toString()) return res.status(400).json({ message: "You are not authorized to delete this post" });
         // Skipping local file deletion since media is hosted on Cloudinary
         await post.deleteOne({ _id: postId });
-        await Comment.deleteMany({postId: postId});
+        await Comment.deleteMany({ postId: postId });
         return res.status(200).json({ message: "Post deleted successfully" });
     } catch (e) {
         return res.status(500).json({ message: e.message });
@@ -153,8 +152,8 @@ export const deletePost = async (req, res) => {
 
 export const commentPost = async (req, res) => {
     try {
-        const {post_id, comment} = req.body;
-        if(!post_id || !comment || comment.trim() === '') return res.status(400).json({message: "All fields are required"});
+        const { post_id, comment } = req.body;
+        if (!post_id || !comment || comment.trim() === '') return res.status(400).json({ message: "All fields are required" });
         const user = req.user;
         const post = await Post.findOne({ _id: post_id });
         if (!post) return res.status(400).json({ message: "Post not found" });
@@ -172,56 +171,56 @@ export const commentPost = async (req, res) => {
 }
 
 
-export const getComments = async (req, res) =>{
-    try{
-        const {post_id} = req.query;
-        const post = await Post.findOne({_id: post_id });
-        if(!post) return res.status(400).json({message:"Post not found"});
-        const comments = await Comment.find({postId: post_id}).sort({createdAt: -1}).populate("userId", "username name profilePicture");
+export const getComments = async (req, res) => {
+    try {
+        const { post_id } = req.query;
+        const post = await Post.findOne({ _id: post_id });
+        if (!post) return res.status(400).json({ message: "Post not found" });
+        const comments = await Comment.find({ postId: post_id }).sort({ createdAt: -1 }).populate("userId", "username name profilePicture");
         return res.status(200).json(comments);
-    }catch(e){
-        return res.status(500).json({message: e.message});
+    } catch (e) {
+        return res.status(500).json({ message: e.message });
     }
 }
 
 
 export const deleteComment = async (req, res) => {
-    const {post_id, commentId} = req.body;
-    try{
-        const post = await Post.findOne({_id: post_id});
-        if(!post) return res.status(400).json({message: "Post not found"});
+    const { post_id, commentId } = req.body;
+    try {
+        const post = await Post.findOne({ _id: post_id });
+        if (!post) return res.status(400).json({ message: "Post not found" });
         const user = req.user;
-        const comment = await Comment.findOne({_id: commentId, postId: post_id});
-        if(!comment) return res.status(400).json({message: "Comment not found"});
-        if(user._id.toString() !== comment.userId.toString() && post.userId.toString() !== user._id.toString()) return res.status(400).json({message: "You are not authorized to delete this comment"});
+        const comment = await Comment.findOne({ _id: commentId, postId: post_id });
+        if (!comment) return res.status(400).json({ message: "Comment not found" });
+        if (user._id.toString() !== comment.userId.toString() && post.userId.toString() !== user._id.toString()) return res.status(400).json({ message: "You are not authorized to delete this comment" });
         await comment.deleteOne();
-        return res.status(200).json({message: "Comment deleted successfully"});
-    }catch(e){
-        return res.status(500).json({message: e.message});
+        return res.status(200).json({ message: "Comment deleted successfully" });
+    } catch (e) {
+        return res.status(500).json({ message: e.message });
     }
 }
 
 
 export const likePost = async (req, res) => {
-    const {postId} = req.body;
+    const { postId } = req.body;
     try {
         const user = req.user;
         const post = await Post.findById(postId);
-        if(!post) return res.status(400).json({message: "Post not found"});
-        
+        if (!post) return res.status(400).json({ message: "Post not found" });
+
         // Check if they already liked it using the new scalable Collection!
         const existingLike = await Like.findOne({ postId: post._id, userId: user._id });
         if (existingLike) {
-            return res.status(400).json({message: "You have already liked this post"});
+            return res.status(400).json({ message: "You have already liked this post" });
         }
-        
+
         // Create a new independent Like document
         const newLike = new Like({ postId: post._id, userId: user._id });
         await newLike.save();
-        
-        return res.status(200).json({message: "Post liked successfully"});
-    } catch(e) {
-        return res.status(500).json({message: e.message});
+
+        return res.status(200).json({ message: "Post liked successfully" });
+    } catch (e) {
+        return res.status(500).json({ message: e.message });
     }
 }
 
@@ -257,7 +256,7 @@ export const searchPosts = async (req, res) => {
         const postIds = result.hits.hits.map(hit => hit._id);
         const fullPosts = await Post.find({ _id: { $in: postIds }, active: true }).populate("userId", "username name profilePicture");
         const orderedPosts = postIds.map(id => fullPosts.find(p => p._id.toString() === id.toString())).filter(p => p);
-        
+
         return res.status(200).json(orderedPosts);
     } catch (error) {
         return res.status(500).json({ message: error.message });
@@ -270,8 +269,8 @@ export const reindexAllPosts = async (req, res) => {
         for (const post of allPosts) {
             await elasticQueue.add('index_post', { postId: post._id });
         }
-        return res.status(200).json({ 
-            message: `Successfully queued ${allPosts.length} posts to be reindexed!` 
+        return res.status(200).json({
+            message: `Successfully queued ${allPosts.length} posts to be reindexed!`
         });
     } catch (error) {
         return res.status(500).json({ message: error.message });
