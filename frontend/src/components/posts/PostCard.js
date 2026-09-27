@@ -48,6 +48,19 @@ export default function PostCard({ post, onDelete }) {
     }).catch(console.error);
   }, [post._id, currentUser]);
 
+  // Handle ESC key to close media modal
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape' && showMediaModal) {
+        setShowMediaModal(false);
+      }
+    };
+    if (showMediaModal) {
+      window.addEventListener('keydown', handleEsc);
+    }
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [showMediaModal]);
+
   const isOwner = currentUser?.userId?._id === post.userId?._id;
 
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
