@@ -92,7 +92,7 @@ export default function LoginPage() {
                   type="email"
                   autoComplete="email"
                   className={`form-input ${errors.email ? 'error' : ''}`}
-                  placeholder="you@example.com"
+                  placeholder="Enter Your Email"
                   value={form.email}
                   onChange={handleChange}
                   disabled={isSubmitting}

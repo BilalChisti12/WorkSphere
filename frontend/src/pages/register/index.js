@@ -103,7 +103,7 @@ export default function RegisterPage() {
                     type="text"
                     autoComplete="name"
                     className={`form-input ${errors.name ? 'error' : ''}`}
-                    placeholder="Jane Smith"
+                    placeholder="Bilal Chisti"
                     value={form.name}
                     onChange={handleChange}
                     disabled={isSubmitting}
@@ -119,7 +119,7 @@ export default function RegisterPage() {
                     type="text"
                     autoComplete="username"
                     className={`form-input ${errors.username ? 'error' : ''}`}
-                    placeholder="janesmith"
+                    placeholder="bilalchisti"
                     value={form.username}
                     onChange={handleChange}
                     disabled={isSubmitting}
@@ -136,7 +136,7 @@ export default function RegisterPage() {
                   type="email"
                   autoComplete="email"
                   className={`form-input ${errors.email ? 'error' : ''}`}
-                  placeholder="you@example.com"
+                  placeholder="Enter your Email"
                   value={form.email}
                   onChange={handleChange}
                   disabled={isSubmitting}
