@@ -32,6 +32,7 @@ export default function PostCard({ post, onDelete }) {
   const [showComments, setShowComments] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showMediaModal, setShowMediaModal] = useState(false);
   
   const [likesCount, setLikesCount] = useState(0);
   const [showLikesModal, setShowLikesModal] = useState(false);
@@ -136,9 +137,13 @@ export default function PostCard({ post, onDelete }) {
 
         {/* Media */}
         {mediaUrl && (
-          <div className={styles.media}>
+          <div 
+            className={styles.media} 
+            onClick={() => setShowMediaModal(true)} 
+            style={{ cursor: 'pointer' }}
+          >
             {isVideo ? (
-              <video controls className={styles.mediaElement} preload="metadata">
+              <video className={styles.mediaElement} preload="metadata">
                 <source src={mediaUrl} />
                 Your browser does not support this video.
               </video>
@@ -211,7 +216,37 @@ export default function PostCard({ post, onDelete }) {
           onCancel={() => setShowDeleteConfirm(false)}
         />
       )}
+
+      {/* Media Fullscreen Modal */}
+      {showMediaModal && (
+        <div 
+          className={styles.mediaModalOverlay} 
+          onClick={() => setShowMediaModal(false)}
+        >
+          <button className={styles.mediaModalClose} onClick={() => setShowMediaModal(false)}>
+            <CloseIcon />
+          </button>
+          <div className={styles.mediaModalContent} onClick={e => e.stopPropagation()}>
+            {isVideo ? (
+              <video controls autoPlay className={styles.mediaModalElement}>
+                <source src={mediaUrl} />
+              </video>
+            ) : (
+              <img src={mediaUrl} alt="Fullscreen media" className={styles.mediaModalElement} />
+            )}
+          </div>
+        </div>
+      )}
     </>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
   );
 }
 
