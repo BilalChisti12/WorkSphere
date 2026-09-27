@@ -287,7 +287,13 @@ export const updateProfilePic = async (req, res) => {
     try {
         const user = req.user;
         if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-        user.profilePicture = req.file.path;
+        if (user.profilePicture) {
+            const oldImagePath = path.join("uploads", user.profilePicture);
+            if (fs.existsSync(oldImagePath)) {
+                fs.unlinkSync(oldImagePath);
+            }
+        }
+        user.profilePicture = req.file.filename;
         await user.save();
 
         return res.status(200).json({ message: "Profile picture updated successfully" });

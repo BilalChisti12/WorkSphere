@@ -11,9 +11,17 @@ import crypto from 'crypto';
 const router = Router();
 
 
-import { uploadCloud as upload } from '../config/cloudinary.js';
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = crypto.randomBytes(8).toString('hex');
+        cb(null, file.originalname + '-' + uniqueSuffix);
+    }
+});
 
-
+const upload = multer({ storage: storage });
 
 router.route('/update_profile_pic')
     .post(authenticate, upload.single('profile_picture'), updateProfilePic);

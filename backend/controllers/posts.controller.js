@@ -29,7 +29,7 @@ export const createPost = async (req, res) => {
         const post = new Post({
             userId: user._id,
             body: body || '',
-            media: mediaFile ? mediaFile.path : '',
+            media: mediaFile ? mediaFile.filename : '',
             fileType: mediaFile ? mediaFile.mimetype.split('/')[1] : '',
             active: false,
         });
@@ -52,6 +52,10 @@ export const createPost = async (req, res) => {
 
         return res.status(200).json({ message });
     } catch (error) {
+        if (req.file) {
+            const mediaPath = path.join("uploads", req.file.filename);
+            if (fs.existsSync(mediaPath)) fs.unlinkSync(mediaPath);
+        }
         return res.status(500).json({ message: error.message });
     }
 }
@@ -68,7 +72,7 @@ export const schedulePost = async (req, res) => {
         const post = new Post({
             userId: user._id,
             body: body || '',
-            media: mediaFile ? mediaFile.path : '',
+            media: mediaFile ? mediaFile.filename : '',
             fileType: mediaFile ? mediaFile.mimetype.split('/')[1] : '',
             active: false,
         });
@@ -90,8 +94,11 @@ export const schedulePost = async (req, res) => {
 
         return res.status(200).json({ message });
 
-        // Cloudinary file delete nhi kr rha hu. free plan hai, to and fro krunga toh limit khatm hojaega
     } catch (error) {
+        if (req.file) {
+            const mediaPath = path.join("uploads", req.file.filename);
+            if (fs.existsSync(mediaPath)) fs.unlinkSync(mediaPath);
+        }
         return res.status(500).json({ message: error.message });
     }
 }
@@ -141,7 +148,12 @@ export const deletePost = async (req, res) => {
         const post = await Post.findOne({ _id: postId });
         if (!post) return res.status(400).json({ message: "Post not found" });
         if (post.userId.toString() !== user._id.toString()) return res.status(400).json({ message: "You are not authorized to delete this post" });
-        // Skipping local file deletion since media is hosted on Cloudinary
+        if (post.media) {
+            const mediaPath = path.join("uploads", post.media);
+            if (fs.existsSync(mediaPath)) {
+                fs.unlinkSync(mediaPath);
+            }
+        }
         await post.deleteOne({ _id: postId });
         await Comment.deleteMany({ postId: postId });
         return res.status(200).json({ message: "Post deleted successfully" });
