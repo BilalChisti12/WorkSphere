@@ -78,6 +78,7 @@ export const schedulePost = async (req, res) => {
         });
         await post.save();
 
+        
         await postQueue.add(
             'publish_post',
             { postId: post._id },
