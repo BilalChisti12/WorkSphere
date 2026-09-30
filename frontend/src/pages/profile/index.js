@@ -9,6 +9,7 @@ import { getImageUrl } from '../../lib/api/client';
 import PostCard from '../../components/posts/PostCard';
 import styles from './profile.module.css';
 
+
 const LIMIT = 10;
 
 function ProfileSkeleton() {
