@@ -9,15 +9,15 @@ const worker = new Worker('PostQueue', async (job) => {
     try {
         const post = await Post.findById(job.data.postId);
         if (!post) return;
-        if(post.active) return;
-        
+        if (post.active) return;
+
         const currentHour = new Date().toISOString().slice(0, 13);
         const redisKey = `ratelimit:posts:${post.userId}:${currentHour}`;
         const currentCount = await redisConnection.incr(redisKey);
         if (currentCount === 1) {
             await redisConnection.expire(redisKey, 3600);
         }
-        
+
         const maxPerHour = parseInt(process.env.MAX_POSTS_PER_HOUR || '5');
         if (currentCount > maxPerHour) {
             await redisConnection.decr(redisKey);
@@ -52,7 +52,7 @@ const worker = new Worker('PostQueue', async (job) => {
         }
         await new Promise(resolve => setTimeout(resolve, parseInt(process.env.RATELIMIT_DUR_BTW)));
         const atomicallyUpdatedPost = await Post.findOneAndUpdate(
-            { _id: post._id, active: false }, 
+            { _id: post._id, active: false },
             { $set: { active: true } },
             { new: true }
         );
